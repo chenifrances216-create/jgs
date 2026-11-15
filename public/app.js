@@ -151,6 +151,11 @@ function logout() {
 
 /* ---------------- chrome ---------------- */
 
+function closeMore() {
+  const sheet = $('#more-sheet');
+  if (sheet) sheet.classList.remove('is-open');
+}
+
 function renderChrome() {
   if (!state.user) return;
   $('#top-profit').textContent = tzs(state.user.balance);
@@ -244,38 +249,50 @@ function rulesCard() {
 
 function viewHome() {
   const u = state.user;
-  const recent = state.transactions.slice(0, 5);
+  const recent = state.transactions.slice(0, 4);
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = String(u.name || u.phone || '').split(' ')[0];
+  const ships = Number(u.activeInvestments) || 0;
   return `
-    <section class="card card-hero">
-      <h2>Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${esc(u.name.split(' ')[0])}</h2>
-      <p>Level ${esc(u.vipLevel || 0)} investor · ${esc(u.activeInvestments)} active ship${u.activeInvestments === 1 ? '' : 's'} · member since ${esc(fmtDay(u.createdAt))}</p>
-    </section>
+    <div class="dash-head">
+      <div>
+        <span class="label-up">Member dashboard</span>
+        <h2>${hello}, ${esc(firstName)}</h2>
+        <p class="muted small">Level ${esc(u.vipLevel || 0)} investor · ${ships} active ship${ships === 1 ? '' : 's'} · member since ${esc(fmtDay(u.createdAt))}</p>
+      </div>
+      <div class="dash-head-actions">
+        <button class="btn btn-ghost btn-sm" data-go="deposit" type="button">Deposit</button>
+        <button class="btn btn-primary btn-sm" data-go="withdraw" type="button">Withdraw</button>
+      </div>
+    </div>
 
     <div class="grid-4">
-      <div class="stat green"><em>Profit balance</em><strong>${tzs(u.balance)}</strong><span class="tiny muted">Withdrawable</span></div>
-      <div class="stat gold"><em>Capital</em><strong>${tzs(u.capital)}</strong><span class="tiny muted">Locked</span></div>
-      <div class="stat"><em>Profit earned</em><strong>${tzs(u.totalProfit)}</strong><span class="tiny muted">All time</span></div>
-      <div class="stat"><em>Referral bonus</em><strong>${tzs(u.totalBonus)}</strong><span class="tiny muted">All time</span></div>
+      <div class="stat green"><em>Profit balance</em><strong>${tzs(u.balance)}</strong><span>Withdrawable</span></div>
+      <div class="stat gold"><em>Capital</em><strong>${tzs(u.capital)}</strong><span>Locked in ships</span></div>
+      <div class="stat"><em>Profit earned</em><strong>${tzs(u.totalProfit)}</strong><span>All time</span></div>
+      <div class="stat"><em>Referral bonus</em><strong>${tzs(u.totalBonus)}</strong><span>All time</span></div>
     </div>
 
-    ${windowNotice(u.withdrawal)}
-
-    <div class="actions">
-      <button class="action" data-go="deposit"><span class="ico">↓</span>Deposit</button>
-      <button class="action" data-go="withdraw"><span class="ico">↑</span>Withdraw</button>
-      <button class="action" data-go="package"><span class="ico">🚢</span>Package</button>
-      <button class="action" data-go="invest"><span class="ico">◆</span>Invest</button>
-      <button class="action" data-go="invite"><span class="ico">＋</span>Invite</button>
-      <button class="action" data-go="history"><span class="ico">≡</span>History</button>
-    </div>
-
-    <div class="card">
-      <div class="section-title">
-        <h3>Recent activity</h3>
-        <button class="btn btn-ghost btn-sm" data-go="history" type="button">View all</button>
+    <div class="dash-split">
+      <div class="card">
+        <div class="section-title"><h3>Quick actions</h3><span class="muted tiny">All services</span></div>
+        <div class="actions">
+          <button class="action" data-go="deposit" type="button"><span class="ico">D</span>Deposit</button>
+          <button class="action" data-go="withdraw" type="button"><span class="ico">W</span>Withdraw</button>
+          <button class="action" data-go="package" type="button"><span class="ico">P</span>Packages</button>
+          <button class="action" data-go="invest" type="button"><span class="ico">I</span>Investment</button>
+          <button class="action" data-go="invite" type="button"><span class="ico">F</span>Invite friends</button>
+          <button class="action" data-go="history" type="button"><span class="ico">H</span>History</button>
+        </div>
+        ${windowNotice(u.withdrawal)}
       </div>
-      <div class="list">
-        ${recent.length ? recent.map(txnRow).join('') : '<p class="muted small">No activity yet. Make your first deposit to rent a ship.</p>'}
+
+      <div class="card">
+        <div class="section-title"><h3>Recent activity</h3><button class="btn btn-ghost btn-sm" data-go="history" type="button">View all</button></div>
+        <div class="list">
+          ${recent.length ? recent.map(txnRow).join('') : '<p class="muted small">No activity yet. Make your first deposit to rent a ship.</p>'}
+        </div>
       </div>
     </div>
 
@@ -649,6 +666,7 @@ async function loadView(view) {
 }
 
 async function go(view) {
+  closeMore();
   state.view = view;
   const renderers = {
     home: viewHome,
@@ -751,6 +769,16 @@ async function simulateDeposit(id) {
 document.addEventListener('click', async (event) => {
   const tab = event.target.closest('[data-auth-tab]');
   if (tab) return setAuthTab(tab.dataset.authTab);
+
+  const moreBtn = event.target.closest('[data-action="more"]');
+  if (moreBtn) {
+    const sheet = $('#more-sheet');
+    if (sheet) sheet.classList.toggle('is-open');
+    return undefined;
+  }
+
+  const closeSheet = event.target.closest('[data-action="close-more"]');
+  if (closeSheet) return closeMore();
 
   const nav = event.target.closest('[data-go]');
   if (nav) {
