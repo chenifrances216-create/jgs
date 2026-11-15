@@ -512,9 +512,44 @@ async function handleApi(db, req, res, url) {
     if (!window.open) {
       throw new HttpError(400, `Withdrawals are open Monday to Friday, 10:00 - 17:00 EAT. ${window.message}`);
     }
+    const body = await readJson(req);
     const settings = getSettings(db);
-    const amount = requireAmount(body_placeholder, 'Withdrawal');
-    return sendJson(res, 400, { error: 'unreachable' });
+    const amount = requireAmount(body.amount, 'Withdrawal');
+    const minWithdraw = Number(settings.minWithdraw || 3000);
+    if (amount < minWithdraw) {
+      throw new HttpError(400, `Minimum withdrawal is TZS ${minWithdraw.toLocaleString('en-US')}`);
+    }
+    if (amount > user.balance) {
+      throw new HttpError(400, 'Withdrawal is more than your profit balance');
+    }
+
+    const options = settings.withdrawOptions || [];
+    const chosen = options.find((option) => option.id === String(body.method || ''));
+    if (!chosen) throw new HttpError(400, 'Choose a withdrawal method');
+    const account = String(body.account || '').trim();
+    if (account.length < 5) throw new HttpError(400, 'Enter the account that should receive the money');
+
+    const fee = Math.round(amount * Number(settings.withdrawFeeRate || 0));
+    const net = amount - fee;
+    const id = newId();
+    const createdAt = nowIso();
+
+    db.transaction(() => {
+      // The balance >= ? guard makes an overdraft impossible, even with
+      // two requests racing each other.
+      const debited = db
+        .prepare('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?')
+        .run(amount, user.id, amount);
+      if (debited.changes !== 1) throw new HttpError(400, 'Withdrawal is more than your profit balance');
+      db.prepare(
+        `INSERT INTO transactions
+           (id, user_id, type, label, amount, status, method, account, fee, net, created_at)
+         VALUES (?, ?, 'withdraw', 'Withdrawal', ?, 'pending', ?, ?, ?, ?, ?)`,
+      ).run(id, user.id, amount, chosen.label, account, fee, net, createdAt);
+    })();
+
+    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+    return sendJson(res, 201, { user: serializeUser(db, fresh), payout: { net, fee } });
   }
 
   if (pathname === '/api/invite' && method === 'GET') {
