@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { createServer } = require('../server/index');
-const { openDatabase } = require('../server/db');
+const { openDatabase, DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD } = require('../server/db');
 const { accrue } = require('../server/engine');
 
 async function startApp() {
@@ -38,6 +38,18 @@ async function call(base, path, { method = 'GET', body, token } = {}) {
   return { status: res.status, json, text };
 }
 
+const ADMIN_USER = process.env.ADMIN_USERNAME || DEFAULT_ADMIN_USERNAME;
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
+
+async function adminLogin(base) {
+  const res = await call(base, '/api/admin/login', {
+    method: 'POST',
+    body: { username: ADMIN_USER, password: ADMIN_PASS },
+  });
+  assert.equal(res.status, 200, 'admin login must succeed');
+  return res.json.token;
+}
+
 test('members get profit automatically, once per day, and the ledger never duplicates', async (t) => {
   const app = await startApp();
   t.after(() => app.close());
@@ -68,8 +80,9 @@ test('members get profit automatically, once per day, and the ledger never dupli
     body: { phone: '0712000001', password: 'secret123' },
   });
   assert.equal(owner.status, 201);
-  assert.equal(owner.json.user.role, 'admin');
+  assert.equal(owner.json.user.role, 'member');
   const ownerToken = owner.json.token;
+  const adminToken = await adminLogin(app.base);
 
   // Member joins with the owner's referral code.
   const member = await call(app.base, '/api/auth/register', {
@@ -97,23 +110,26 @@ test('members get profit automatically, once per day, and the ledger never dupli
   const depositId = deposit.json.transaction.id;
 
   // A member can never credit a deposit on their own.
-  const selfCredit = await call(app.base, `/api/deposit/${depositId}/simulate`, {
+  const selfCredit = await call(app.base, `/api/admin/requests/${depositId}/decision`, {
     method: 'POST',
     token: memberToken,
+    body: { action: 'approve' },
   });
-  assert.equal(selfCredit.status, 403);
+  assert.equal(selfCredit.status, 401);
 
-  const confirmed = await call(app.base, `/api/deposit/${depositId}/simulate`, {
+  const confirmed = await call(app.base, `/api/admin/requests/${depositId}/decision`, {
     method: 'POST',
-    token: ownerToken,
+    token: adminToken,
+    body: { action: 'approve' },
   });
   assert.equal(confirmed.status, 200);
-  assert.equal(confirmed.json.user.capital, 100000);
+  assert.equal(confirmed.json.transaction.status, 'completed');
 
   // Confirming the same deposit twice must not credit the capital twice.
-  const confirmedAgain = await call(app.base, `/api/deposit/${depositId}/simulate`, {
+  const confirmedAgain = await call(app.base, `/api/admin/requests/${depositId}/decision`, {
     method: 'POST',
-    token: ownerToken,
+    token: adminToken,
+    body: { action: 'approve' },
   });
   assert.equal(confirmedAgain.status, 400);
   const memberAfterDeposit = await call(app.base, '/api/me', { token: memberToken });
@@ -180,14 +196,16 @@ test('members get profit automatically, once per day, and the ledger never dupli
   assert.equal(tooMuch.status, 400);
 
   // Admin overview lists the members.
-  const overview = await call(app.base, '/api/admin/overview', { token: ownerToken });
+  const overview = await call(app.base, '/api/admin/overview', { token: adminToken });
   assert.equal(overview.status, 200);
-  assert.equal(overview.json.stats.users, 2);
+  assert.equal(overview.json.stats.members, 2);
+  assert.equal(overview.json.stats.depositors, 1);
+  assert.equal(overview.json.stats.registeredOnly, 1);
   assert.equal(overview.json.stats.totalDeposited, 100000);
 
   // Members cannot read the admin panel.
   const forbidden = await call(app.base, '/api/admin/overview', { token: memberToken });
-  assert.equal(forbidden.status, 403);
+  assert.equal(forbidden.status, 401);
 
   // Unauthenticated access is refused.
   const anonymous = await call(app.base, '/api/me');
@@ -214,6 +232,8 @@ test('admin approval credits a deposit exactly once', async (t) => {
     body: { phone: '0713000002', password: 'secret123' },
   });
 
+  const adminToken = await adminLogin(app.base);
+
   const deposit = await call(app.base, '/api/deposit', {
     method: 'POST',
     token: member.json.token,
@@ -222,16 +242,16 @@ test('admin approval credits a deposit exactly once', async (t) => {
 
   const approve = await call(
     app.base,
-    `/api/admin/transactions/${deposit.json.transaction.id}/decision`,
-    { method: 'POST', token: owner.json.token, body: { action: 'approve' } },
+    `/api/admin/requests/${deposit.json.transaction.id}/decision`,
+    { method: 'POST', token: adminToken, body: { action: 'approve' } },
   );
   assert.equal(approve.status, 200);
   assert.equal(approve.json.transaction.status, 'completed');
 
   const approveAgain = await call(
     app.base,
-    `/api/admin/transactions/${deposit.json.transaction.id}/decision`,
-    { method: 'POST', token: owner.json.token, body: { action: 'approve' } },
+    `/api/admin/requests/${deposit.json.transaction.id}/decision`,
+    { method: 'POST', token: adminToken, body: { action: 'approve' } },
   );
   assert.equal(approveAgain.status, 400);
 
