@@ -221,7 +221,7 @@ function windowNotice(window = {}) {
     <div class="notice ${open ? 'open' : 'closed'}">
       <div>
         <strong>${open ? 'Withdrawals are open now' : 'Withdrawals are closed'}</strong>
-        ${esc(window.message || '')} Monday – Friday, 10:00 – 17:00 EAT.
+        ${esc(window.message || '')} Withdrawals run every day except Saturday and Sunday.
       </div>
     </div>`;
 }
@@ -235,9 +235,9 @@ function rulesCard() {
         <li>Minimum withdrawal: <b>${tzs(rules.minWithdraw || 3000)}</b></li>
         <li>Service fee: <b>${Math.round((rules.withdrawFeeRate || 0.1) * 100)}%</b> of every withdrawal</li>
         <li>Withdrawal days: <b>Monday – Friday only</b> (Saturday &amp; Sunday closed)</li>
-        <li>Withdrawal hours: <b>10:00 – 17:00 EAT</b></li>
+        <li>Withdrawal hours: <b>any time on open days</b></li>
         <li>Only <b>profit</b> can be withdrawn — <b>capital stays locked</b></li>
-        <li>No daily profit is credited on Saturday or Sunday</li>
+        <li>Daily profit is credited every 24 hours, <b>including Saturday and Sunday</b></li>
       </ul>
     </div>`;
 }
@@ -409,7 +409,7 @@ function viewWithdraw() {
         <button class="btn btn-primary" type="submit" ${u.withdrawal && u.withdrawal.open && !u.withdrawBlocked ? '' : 'disabled'}>
           ${u.withdrawBlocked ? 'Withdrawals blocked' : u.withdrawal && u.withdrawal.open ? 'Request withdrawal' : 'Withdrawals closed'}
         </button>
-        <p class="form-note">Requests made outside Monday – Friday, 10:00 – 17:00 EAT are not accepted.</p>
+        <p class="form-note">Requests made on Saturday or Sunday are not accepted.</p>
       </form>
     </div>
 
@@ -448,7 +448,7 @@ function viewPackage() {
       <p>${packages.length} levels · rent with capital · profit credited 24 hours after renting.</p>
     </section>
     <div class="notice info">
-      <div><strong>How it works</strong> Choose a level, rent the ship with capital, and receive the daily profit every business day for ${packages[0] ? packages[0].days : 30} days. Saturday and Sunday pay nothing.</div>
+      <div><strong>How it works</strong> Choose a level, rent the ship with capital, and receive the daily profit every 24 hours for ${packages[0] ? packages[0].days : 30} days, including Saturday and Sunday.</div>
     </div>
     <div class="grid-3">
       ${packages.map((p) => shipCard(p)).join('')}
