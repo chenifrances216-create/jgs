@@ -13,7 +13,6 @@ const state = {
   transactions: [],
   investments: [],
   invite: null,
-  admin: null,
   pendingDeposit: null,
   investLevel: null,
 };
@@ -143,7 +142,6 @@ function logout() {
   api('/api/auth/logout', { method: 'POST' }).catch(() => {});
   state.token = null;
   state.user = null;
-  state.admin = null;
   state.transactions = [];
   state.investments = [];
   localStorage.removeItem(TOKEN_KEY);
@@ -630,72 +628,7 @@ function viewAccount() {
         <button class="btn btn-primary" type="submit">Update password</button>
       </form>
     </div>
-    ${u.role === 'admin' ? '<button class="btn btn-gold" data-go="admin" type="button">Open admin panel</button>' : ''}
     <button class="btn btn-ghost" data-action="logout" type="button">Sign out</button>`;
-}
-
-function viewAdmin() {
-  const data = state.admin;
-  if (!data) return '<div class="card"><p class="muted small">Loading admin data…</p></div>';
-  const stats = data.stats || {};
-  const requests = data.requests || [];
-  return `
-    <section class="card card-hero">
-      <h2>Admin panel</h2>
-      <p>Approve deposits and withdrawals, monitor payouts.</p>
-    </section>
-    <div class="grid-4">
-      <div class="stat"><em>Members</em><strong>${esc(stats.users || 0)}</strong></div>
-      <div class="stat gold"><em>Pending deposits</em><strong>${esc(stats.pendingDeposits || 0)}</strong></div>
-      <div class="stat gold"><em>Pending withdrawals</em><strong>${esc(stats.pendingWithdrawals || 0)}</strong></div>
-      <div class="stat green"><em>Total deposited</em><strong>${tzs(stats.totalDeposited || 0)}</strong></div>
-    </div>
-    <div class="card">
-      <div class="section-title"><h3>Pending requests</h3><span class="muted small">${requests.length}</span></div>
-      <div class="list">
-        ${
-          requests.length
-            ? requests
-                .map(
-                  (t) => `
-          <div class="row">
-            <div class="row-ico ${t.type === 'withdraw' ? 'out' : ''}">${t.type === 'withdraw' ? '↑' : '↓'}</div>
-            <div class="row-main" style="flex:1">
-              <strong>${esc(t.label)} · ${tzs(t.amount)}</strong>
-              <span>${esc(t.user ? `${t.user.name} · ${t.user.phone}` : 'Unknown')} · ${esc(t.method || '')} · ${esc(fmtDate(t.createdAt))}</span>
-              ${t.type === 'withdraw' ? `<span>Fee ${tzs(t.fee)} · pays out ${tzs(t.net)}</span>` : ''}
-            </div>
-            <div class="row-amt" style="display:flex;gap:6px">
-              <button class="btn btn-primary btn-sm" data-action="decide" data-id="${esc(t.id)}" data-decision="approve" type="button">Approve</button>
-              <button class="btn btn-ghost btn-sm" data-action="decide" data-id="${esc(t.id)}" data-decision="reject" type="button">Reject</button>
-            </div>
-          </div>`,
-                )
-                .join('')
-            : '<p class="muted small">No pending requests.</p>'
-        }
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-title"><h3>Payouts in progress</h3></div>
-      <div class="list">
-        ${
-          (data.payouts || []).length
-            ? data.payouts
-                .map(
-                  (t) => `
-          <div class="row">
-            <div class="row-ico gold">↑</div>
-            <div class="row-main"><strong>${tzs(t.net)} to ${esc(t.user ? t.user.name : 'member')}</strong><span>${esc(t.method || '')} · ${esc(fmtDate(t.createdAt))}</span></div>
-            <div class="row-amt">${statusBadge(t)}</div>
-          </div>`,
-                )
-                .join('')
-            : '<p class="muted small">Nothing is being paid out right now.</p>'
-        }
-      </div>
-    </div>
-    <button class="btn btn-ghost" data-go="home" type="button">Back to dashboard</button>`;
 }
 
 /* ---------------- data loading ---------------- */
@@ -729,7 +662,6 @@ async function go(view) {
     invite: viewInvite,
     history: viewHistory,
     account: viewAccount,
-    admin: viewAdmin,
   };
   try {
     await loadView(view);
@@ -812,20 +744,6 @@ async function simulateDeposit(id) {
     state.pendingDeposit = null;
     toast('Deposit credited to your capital.');
     await go('deposit');
-  } catch (err) {
-    toast(err.message, true);
-  }
-}
-
-async function decide(id, decision) {
-  try {
-    const data = await api(`/api/admin/transactions/${id}/decision`, {
-      method: 'POST',
-      body: { action: decision },
-    });
-    state.admin = null;
-    toast(`${data.transaction.label} ${decision === 'approve' ? 'approved' : 'rejected'}.`);
-    await go('admin');
   } catch (err) {
     toast(err.message, true);
   }
