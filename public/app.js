@@ -646,9 +646,6 @@ async function loadView(view) {
   if (view === 'invite') {
     state.invite = await api('/api/invite');
   }
-  if (view === 'admin') {
-    state.admin = await api('/api/admin/overview');
-  }
 }
 
 async function go(view) {
