@@ -15,6 +15,8 @@
  * request) credits each due day exactly once.
  */
 
+const crypto = require('node:crypto');
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EAT_OFFSET_MS = 3 * 60 * 60 * 1000; // Africa/Dar_es_Salaam, UTC+3, no DST
 
