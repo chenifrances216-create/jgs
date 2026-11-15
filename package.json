@@ -12,7 +12,8 @@
     "dev": "node server/index.js",
     "test": "node --test tests/"
   },
-  "dependencies": {
-    "better-sqlite3": "^13.2.0"
+  "dependencies": {},
+  "devDependencies": {
+    "better-sqlite3": "^11.10.0"
   }
 }

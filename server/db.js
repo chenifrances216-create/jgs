@@ -8,7 +8,49 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const Database = require('better-sqlite3');
+/**
+ * SQLite driver.
+ *
+ * The deployment image runs Node 26, which ships `node:sqlite`, so the
+ * application needs no native dependency to compile. Older local Node
+ * versions fall back to better-sqlite3, which is a devDependency only.
+ */
+function loadDriver() {
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    return { open: (file) => new DatabaseSync(file), name: 'node:sqlite' };
+  } catch (err) {
+    const BetterSqlite3 = require('better-sqlite3');
+    return { open: (file) => new BetterSqlite3(file), name: 'better-sqlite3' };
+  }
+}
+
+/** Compatibility layer so both drivers expose the same small API. */
+function wrapDatabase(raw, driver) {
+  return {
+    driver,
+    raw,
+    prepare: (sql) => raw.prepare(sql),
+    exec: (sql) => raw.exec(sql),
+    pragma: (statement) => raw.exec(`PRAGMA ${statement}`),
+    transaction: (fn) => (...args) => {
+      raw.exec('BEGIN IMMEDIATE');
+      try {
+        const result = fn(...args);
+        raw.exec('COMMIT');
+        return result;
+      } catch (err) {
+        try {
+          raw.exec('ROLLBACK');
+        } catch (rollbackError) {
+          /* transaction already closed */
+        }
+        throw err;
+      }
+    },
+    close: () => raw.close(),
+  };
+}
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -254,7 +296,8 @@ function openDatabase(file) {
   if (file !== ':memory:') {
     fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
   }
-  const db = new Database(file);
+  const driver = loadDriver();
+  const db = wrapDatabase(driver.open(file), driver.name);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
@@ -272,6 +315,7 @@ module.exports = {
   DEFAULT_PACKAGES,
   DEFAULT_SETTINGS,
   openDatabase,
+  loadDriver,
   defaultDatabasePath,
   hashPassword,
   verifyPassword,
