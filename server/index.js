@@ -486,8 +486,8 @@ async function handleApi(db, req, res, url) {
       throw new HttpError(400, 'Payments are live. Sandbox simulation is disabled.');
     }
     const txn = db
-      .prepare("SELECT * FROM transactions WHERE id = ? AND user_id = ? AND type = 'deposit'")
-      .get(simulateMatch[1], user.id);
+      .prepare("SELECT * FROM transactions WHERE id = ? AND type = 'deposit'")
+      .get(simulateMatch[1]);
     if (!txn) throw new HttpError(404, 'Deposit not found');
     if (txn.status !== 'pending') throw new HttpError(400, 'This deposit was already processed');
 
