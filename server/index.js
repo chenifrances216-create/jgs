@@ -496,11 +496,11 @@ async function handleApi(db, req, res, url) {
         .prepare("UPDATE transactions SET status = 'completed', decided_at = ? WHERE id = ? AND status = 'pending'")
         .run(nowIso(), txn.id);
       if (updated.changes !== 1) throw new HttpError(400, 'This deposit was already processed');
-      db.prepare('UPDATE users SET capital = capital + ? WHERE id = ?').run(txn.amount, user.id);
-      payInviteBonus(db, user.id, txn.amount);
+      db.prepare('UPDATE users SET capital = capital + ? WHERE id = ?').run(txn.amount, txn.user_id);
+      payInviteBonus(db, txn.user_id, txn.amount);
     })();
 
-    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(txn.user_id);
     return sendJson(res, 200, { user: serializeUser(db, fresh) });
   }
 

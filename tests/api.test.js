@@ -86,9 +86,16 @@ test('members get profit automatically, once per day, and the ledger never dupli
   assert.equal(deposit.json.transaction.status, 'pending');
   const depositId = deposit.json.transaction.id;
 
-  const confirmed = await call(app.base, `/api/deposit/${depositId}/simulate`, {
+  // A member can never credit a deposit on their own.
+  const selfCredit = await call(app.base, `/api/deposit/${depositId}/simulate`, {
     method: 'POST',
     token: memberToken,
+  });
+  assert.equal(selfCredit.status, 403);
+
+  const confirmed = await call(app.base, `/api/deposit/${depositId}/simulate`, {
+    method: 'POST',
+    token: ownerToken,
   });
   assert.equal(confirmed.status, 200);
   assert.equal(confirmed.json.user.capital, 100000);
@@ -96,7 +103,7 @@ test('members get profit automatically, once per day, and the ledger never dupli
   // Confirming the same deposit twice must not credit the capital twice.
   const confirmedAgain = await call(app.base, `/api/deposit/${depositId}/simulate`, {
     method: 'POST',
-    token: memberToken,
+    token: ownerToken,
   });
   assert.equal(confirmedAgain.status, 400);
   const memberAfterDeposit = await call(app.base, '/api/me', { token: memberToken });
