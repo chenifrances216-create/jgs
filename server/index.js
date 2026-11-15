@@ -620,7 +620,9 @@ async function handleApi(db, req, res, url) {
       serializeUser,
       payInviteBonus,
     });
-    if (handled) return;
+    // handleAdminApi returns false only when the path is not an admin route;
+    // every other outcome has already written the response.
+    if (handled !== false) return;
   }
 
   throw new HttpError(404, 'Not found');
