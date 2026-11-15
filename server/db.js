@@ -207,11 +207,11 @@ const DEFAULT_SETTINGS = {
   withdrawFeeRate: 0.1,
   inviteBonusPercent: 10,
   depositMethods: [
-    { id: 'mpesa', label: 'M-Pesa (Vodacom)', account: '', channel: 'mobile_money' },
-    { id: 'tigopesa', label: 'Mixx by Yas (Tigo)', account: '', channel: 'mobile_money' },
-    { id: 'airtel', label: 'Airtel Money', account: '', channel: 'mobile_money' },
-    { id: 'halopesa', label: 'HaloPesa', account: '', channel: 'mobile_money' },
-    { id: 'bank', label: 'Bank transfer (CRDB)', account: '', channel: 'bank' },
+    { id: 'mpesa', label: 'M-Pesa (Vodacom)', account: '150 456 789', holder: 'SHIP TRANSFER LTD', channel: 'mobile_money' },
+    { id: 'tigopesa', label: 'Mixx by Yas (Tigo)', account: '150 456 790', holder: 'SHIP TRANSFER LTD', channel: 'mobile_money' },
+    { id: 'airtel', label: 'Airtel Money', account: '150 456 791', holder: 'SHIP TRANSFER LTD', channel: 'mobile_money' },
+    { id: 'halopesa', label: 'HaloPesa', account: '150 456 792', holder: 'SHIP TRANSFER LTD', channel: 'mobile_money' },
+    { id: 'bank', label: 'Bank transfer (CRDB / NMB)', account: '0150 4567 8900', holder: 'SHIP TRANSFER LTD', channel: 'bank' },
   ],
   depositNumbers: [],
   withdrawOptions: [
