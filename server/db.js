@@ -290,6 +290,37 @@ function seed(db) {
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     insertSetting.run(key, JSON.stringify(value));
   }
+
+  // Databases created by earlier versions stored empty payment accounts, which
+  // leaves members without an account to send money to. Fill only the missing
+  // account/holder values from the current defaults; never overwrite values an
+  // operator has already published.
+  const methodsRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('depositMethods');
+  if (methodsRow) {
+    let stored = [];
+    try {
+      stored = JSON.parse(methodsRow.value) || [];
+    } catch {
+      stored = [];
+    }
+    let changed = false;
+    const patched = stored.map((method) => {
+      const preset = DEFAULT_SETTINGS.depositMethods.find((item) => item.id === method.id);
+      if (!preset || !preset.account) return method;
+      const patch = {};
+      if (!method.account) patch.account = preset.account;
+      if (!method.holder && preset.holder) patch.holder = preset.holder;
+      if (Object.keys(patch).length === 0) return method;
+      changed = true;
+      return { ...method, ...patch };
+    });
+    if (changed) {
+      db.prepare('UPDATE settings SET value = ? WHERE key = ?').run(
+        JSON.stringify(patched),
+        'depositMethods',
+      );
+    }
+  }
 }
 
 function openDatabase(file) {
