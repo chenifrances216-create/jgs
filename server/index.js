@@ -742,14 +742,15 @@ function createServer(db) {
 }
 
 function resolveDataDir() {
-  const candidates = [process.env.DATA_DIR, path.join(__dirname, '..', 'data')].filter(Boolean);
+  const candidates = [process.env.DATA_DIR, '/data', path.join(__dirname, '..', 'data')].filter(Boolean);
   for (const dir of candidates) {
     try {
       fs.mkdirSync(dir, { recursive: true });
       fs.accessSync(dir, fs.constants.W_OK);
+      console.log(`[server] data directory ${dir} is writable`);
       return dir;
     } catch (err) {
-      console.warn(`[server] data directory ${dir} is not writable, trying the next one`);
+      console.warn(`[server] data directory ${dir} is not usable (${err.code || err.message}), trying the next one`);
     }
   }
   throw new Error('No writable data directory is available');
