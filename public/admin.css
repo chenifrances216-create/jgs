@@ -1,13 +1,13 @@
 :root {
-  --bg: #070c17;
-  --bg-soft: #0d1526;
-  --card: #101a2e;
-  --line: #1e2b45;
-  --text: #eaf0fb;
-  --muted: #8ea0bd;
-  --gold: #f5c451;
-  --green: #35d07f;
-  --red: #ff6b6b;
+  --bg: #f4f8f5;
+  --bg-soft: #eef5f0;
+  --card: #ffffff;
+  --line: #0d33211f;
+  --text: #0f2419;
+  --muted: #5c7065;
+  --gold: #15803d;
+  --green: #16a34a;
+  --red: #c02626;
   --radius: 16px;
 }
 
@@ -19,8 +19,8 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(1100px 520px at 12% -10%, rgba(245, 196, 81, 0.14), transparent 60%),
-    radial-gradient(900px 480px at 92% 0%, rgba(53, 208, 127, 0.12), transparent 55%),
+    radial-gradient(1100px 520px at 12% -10%, rgba(21, 128, 61, 0.10), transparent 60%),
+    radial-gradient(900px 480px at 92% 0%, rgba(22, 163, 74, 0.12), transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
@@ -74,11 +74,11 @@ p {
 
 .login-card {
   width: min(420px, 100%);
-  background: linear-gradient(180deg, #121d33, #0c1424);
+  background: linear-gradient(180deg, #ffffff, #f6faf7);
   border: 1px solid var(--line);
   border-radius: 22px;
   padding: 26px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 30px 70px rgba(13, 51, 33, 0.12);
   display: grid;
   gap: 12px;
 }
@@ -106,15 +106,15 @@ p {
   place-items: center;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #10192b;
-  background: linear-gradient(135deg, var(--gold), #ffe6a3);
-  box-shadow: 0 8px 22px rgba(245, 196, 81, 0.28);
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--gold), #22c55e);
+  box-shadow: 0 8px 22px rgba(21, 128, 61, 0.22);
 }
 
 .alert {
-  background: rgba(255, 107, 107, 0.12);
-  border: 1px solid rgba(255, 107, 107, 0.4);
-  color: #ffc9c9;
+  background: rgba(192, 38, 38, 0.10);
+  border: 1px solid rgba(192, 38, 38, 0.40);
+  color: #7f1d1d;
   padding: 10px 12px;
   border-radius: 12px;
   font-size: 0.85rem;
@@ -132,7 +132,7 @@ p {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: rgba(9, 15, 27, 0.86);
+  background: rgba(244, 248, 245, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -157,11 +157,11 @@ p {
 
 .tabs button:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(13, 51, 33, 0.05);
 }
 
 .tabs button.active {
-  color: #10192b;
+  color: #ffffff;
   background: var(--gold);
   border-color: var(--gold);
 }
@@ -174,7 +174,7 @@ p {
 
 .pill {
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(13, 51, 33, 0.04);
   border-radius: 999px;
   padding: 5px 12px;
   font-size: 0.78rem;
@@ -192,7 +192,7 @@ p {
 /* -------------------------------- cards --------------------------------- */
 
 .card {
-  background: linear-gradient(180deg, rgba(18, 29, 51, 0.96), rgba(12, 20, 36, 0.96));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 247, 0.98));
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 18px;
@@ -202,8 +202,8 @@ p {
 
 .card.hero {
   background:
-    radial-gradient(600px 200px at 100% 0%, rgba(245, 196, 81, 0.16), transparent 70%),
-    linear-gradient(180deg, rgba(18, 29, 51, 0.96), rgba(12, 20, 36, 0.96));
+    radial-gradient(600px 200px at 100% 0%, rgba(21, 128, 61, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 247, 0.98));
 }
 
 .card.hero .btn {
@@ -224,7 +224,7 @@ p {
 }
 
 .stat {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(13, 51, 33, 0.03);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
@@ -270,7 +270,7 @@ p {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(13, 51, 33, 0.02);
 }
 
 .row-ico {
@@ -282,14 +282,14 @@ p {
   place-items: center;
   font-weight: 700;
   color: var(--green);
-  background: rgba(53, 208, 127, 0.12);
-  border: 1px solid rgba(53, 208, 127, 0.28);
+  background: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.28);
 }
 
 .row-ico.out {
   color: var(--gold);
-  background: rgba(245, 196, 81, 0.12);
-  border-color: rgba(245, 196, 81, 0.3);
+  background: rgba(21, 128, 61, 0.12);
+  border-color: rgba(21, 128, 61, 0.30);
 }
 
 .row-ico.in {
@@ -336,14 +336,14 @@ p {
 
 .badge.completed {
   color: var(--green);
-  border-color: rgba(53, 208, 127, 0.4);
-  background: rgba(53, 208, 127, 0.1);
+  border-color: rgba(22, 163, 74, 0.40);
+  background: rgba(22, 163, 74, 0.10);
 }
 
 .badge.rejected {
-  color: #ffb1b1;
-  border-color: rgba(255, 107, 107, 0.4);
-  background: rgba(255, 107, 107, 0.1);
+  color: #7f1d1d;
+  border-color: rgba(192, 38, 38, 0.40);
+  background: rgba(192, 38, 38, 0.10);
 }
 
 /* -------------------------------- buttons -------------------------------- */
@@ -351,7 +351,7 @@ p {
 .btn {
   border-radius: 11px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(13, 51, 33, 0.04);
   color: var(--text);
   padding: 10px 16px;
   font-size: 0.88rem;
@@ -361,7 +361,7 @@ p {
 }
 
 .btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(13, 51, 33, 0.09);
 }
 
 .btn.small {
@@ -371,9 +371,9 @@ p {
 }
 
 .btn.primary {
-  background: linear-gradient(135deg, var(--gold), #ffdf95);
+  background: linear-gradient(135deg, var(--gold), #4ade80);
   border-color: var(--gold);
-  color: #10192b;
+  color: #ffffff;
 }
 
 .btn.primary:hover {
@@ -381,9 +381,9 @@ p {
 }
 
 .btn.danger {
-  color: #ffc9c9;
-  border-color: rgba(255, 107, 107, 0.42);
-  background: rgba(255, 107, 107, 0.12);
+  color: #7f1d1d;
+  border-color: rgba(192, 38, 38, 0.42);
+  background: rgba(192, 38, 38, 0.10);
 }
 
 .btn.ghost {
@@ -412,7 +412,7 @@ p {
 .field input,
 .field select {
   width: 100%;
-  background: #0a1220;
+  background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 11px;
   padding: 10px 12px;
@@ -423,7 +423,7 @@ p {
 
 .field input:focus,
 .field select:focus {
-  outline: 2px solid rgba(245, 196, 81, 0.45);
+  outline: 2px solid rgba(21, 128, 61, 0.45);
   outline-offset: 1px;
 }
 
@@ -467,7 +467,7 @@ p {
 }
 
 .kv-grid > div {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(13, 51, 33, 0.03);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
@@ -486,7 +486,7 @@ p {
   font-family: 'Consolas', 'SFMono-Regular', monospace;
   font-size: 1.15rem;
   letter-spacing: 1px;
-  background: #0a1220;
+  background: #ffffff;
   border: 1px dashed var(--gold);
   border-radius: 12px;
   padding: 14px;
@@ -501,7 +501,7 @@ p {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(4, 8, 16, 0.72);
+  background: rgba(13, 51, 33, 0.42);
   backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
@@ -512,13 +512,13 @@ p {
   width: min(560px, 100%);
   max-height: 88vh;
   overflow: auto;
-  background: linear-gradient(180deg, #131f36, #0b1322);
+  background: linear-gradient(180deg, #ffffff, #f6faf7);
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 18px;
   display: grid;
   gap: 12px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 30px 70px rgba(13, 51, 33, 0.18);
 }
 
 /* --------------------------------- toast --------------------------------- */
@@ -530,9 +530,9 @@ p {
   transform: translate(-50%, 24px);
   opacity: 0;
   pointer-events: none;
-  background: #12213a;
-  border: 1px solid rgba(53, 208, 127, 0.45);
-  color: #d8ffe8;
+  background: #eaf3ed;
+  border: 1px solid rgba(22, 163, 74, 0.45);
+  color: #14532d;
   padding: 11px 18px;
   border-radius: 12px;
   font-size: 0.86rem;
@@ -548,9 +548,9 @@ p {
 }
 
 .toast.error {
-  border-color: rgba(255, 107, 107, 0.55);
-  color: #ffd4d4;
-  background: #2a1218;
+  border-color: rgba(192, 38, 38, 0.55);
+  color: #7f1d1d;
+  background: #fdeaea;
 }
 
 /* ------------------------------- responsive ------------------------------ */
