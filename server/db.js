@@ -155,47 +155,79 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 `;
 
-const DEFAULT_PACKAGES = [
-  {
-    id: 'level-1',
-    level: 1,
-    name: 'Starter',
-    shipName: 'MV Bahari Star',
-    tag: 'Entry',
-    image: '/img/ships/level-1.svg',
-    capital: 50000,
-    dailyProfit: 3000,
-    days: 30,
-    perks: ['Daily profit Monday to Friday', 'Profit withdrawable any business day', 'Referral bonus 10%'],
-    sortOrder: 1,
-  },
-  {
-    id: 'level-2',
-    level: 2,
-    name: 'Voyager',
-    shipName: 'MV Pwani Express',
-    tag: 'Popular',
-    image: '/img/ships/level-1.svg',
-    capital: 250000,
-    dailyProfit: 17500,
-    days: 30,
-    perks: ['Higher daily profit', 'Priority payout queue', 'Referral bonus 10%'],
-    sortOrder: 2,
-  },
-  {
-    id: 'level-3',
-    level: 3,
-    name: 'Commodore',
-    shipName: 'MV Zanzibar Queen',
-    tag: 'Premium',
-    image: '/img/ships/level-1.svg',
-    capital: 1000000,
-    dailyProfit: 80000,
-    days: 30,
-    perks: ['Top daily profit', 'Dedicated account manager', 'Referral bonus 10%'],
-    sortOrder: 3,
-  },
+/**
+ * Published price list: the capital a member locks and the profit paid for
+ * every business day of the term.
+ */
+const TIERS = [
+  { capital: 10000, dailyProfit: 500 },
+  { capital: 20000, dailyProfit: 1000 },
+  { capital: 30000, dailyProfit: 1500 },
+  { capital: 60000, dailyProfit: 2000 },
+  { capital: 100000, dailyProfit: 3000 },
+  { capital: 200000, dailyProfit: 5000 },
+  { capital: 300000, dailyProfit: 7000 },
+  { capital: 400000, dailyProfit: 8000 },
+  { capital: 600000, dailyProfit: 15000 },
+  { capital: 700000, dailyProfit: 20000 },
+  { capital: 800000, dailyProfit: 25000 },
+  { capital: 900000, dailyProfit: 30000 },
+  { capital: 1000000, dailyProfit: 37000 },
 ];
+
+/** Every ship pays this many profit days. */
+const TIER_DAYS = 30;
+
+const TIER_NAMES = [
+  'Starter',
+  'Voyager',
+  'Mariner',
+  'Captain',
+  'Commodore',
+  'Navigator',
+  'Admiral',
+  'Elite',
+  'Platinum',
+  'Diamond',
+  'Royal',
+  'Imperial',
+  'Legend',
+];
+
+const SHIP_NAMES = [
+  'MV Bahari Star',
+  'MV Pwani Express',
+  'MV Kilimanjaro',
+  'MV Tanga Bay',
+  'MV Zanzibar Queen',
+  'MV Serengeti',
+  'MV Nyasa Star',
+  'MV Indian Ocean',
+  'MV Dar Express',
+  'MV Mafia Pearl',
+  'MV Pemba Crown',
+  'MV Bagamoyo Star',
+  'MV Ship Transfer 1',
+];
+
+const DEFAULT_PACKAGES = TIERS.map((tier, index) => ({
+  id: `tier-${tier.capital}`,
+  level: index + 1,
+  name: TIER_NAMES[index] || `Level ${index + 1}`,
+  shipName: SHIP_NAMES[index] || `MV Ship ${index + 1}`,
+  tag: `Level ${index + 1}`,
+  image: '/img/ships/level-1.svg',
+  capital: tier.capital,
+  dailyProfit: tier.dailyProfit,
+  days: TIER_DAYS,
+  perks: [
+    `TZS ${tier.dailyProfit.toLocaleString('en-US')} profit every business day`,
+    'Profit paid Monday to Friday (no weekend profit)',
+    'Withdraw profit Monday to Friday, 10:00 - 17:00 EAT',
+    'Referral bonus 10%',
+  ],
+  sortOrder: index + 1,
+}));
 
 /**
  * Company payment details are intentionally empty by default: the operator
@@ -265,10 +297,23 @@ function makeReferralCode(taken) {
 }
 
 function seed(db) {
+  // Tiers are upserted so a published price change reaches databases that were
+  // created by an earlier version of the price list.
   const insertPackage = db.prepare(`
-    INSERT OR IGNORE INTO packages
+    INSERT INTO packages
       (id, level, name, ship_name, tag, image, capital, daily_profit, days, perks, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      level = excluded.level,
+      name = excluded.name,
+      ship_name = excluded.ship_name,
+      tag = excluded.tag,
+      image = excluded.image,
+      capital = excluded.capital,
+      daily_profit = excluded.daily_profit,
+      days = excluded.days,
+      perks = excluded.perks,
+      sort_order = excluded.sort_order
   `);
   for (const pkg of DEFAULT_PACKAGES) {
     insertPackage.run(
@@ -286,9 +331,30 @@ function seed(db) {
     );
   }
 
+  // Retire tiers that are no longer published. Existing investments keep their
+  // own snapshot of ship, capital and daily profit, so past terms stay intact.
+  const publishedIds = DEFAULT_PACKAGES.map((pkg) => pkg.id);
+  db.prepare(
+    `DELETE FROM packages WHERE id NOT IN (${publishedIds.map(() => '?').join(', ')})`,
+  ).run(...publishedIds);
+
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     insertSetting.run(key, JSON.stringify(value));
+  }
+
+  // Contractual values published by the operator. They are re-applied on every
+  // start so an older database cannot keep a different minimum, fee or bonus.
+  const LOCKED_SETTINGS = {
+    minWithdraw: 3000,
+    withdrawFeeRate: 0.1,
+    inviteBonusPercent: 10,
+  };
+  const setSetting = db.prepare(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+  );
+  for (const [key, value] of Object.entries(LOCKED_SETTINGS)) {
+    setSetting.run(key, JSON.stringify(value));
   }
 
   // Databases created by earlier versions stored empty payment accounts, which

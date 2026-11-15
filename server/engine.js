@@ -60,18 +60,48 @@ function nextPayoutAt(startedAt, days, paidDays) {
   return schedule[paidDays];
 }
 
-/** Withdrawals: every day except Saturday and Sunday (EAT). */
+/** Withdrawals: Monday to Friday, 10:00 - 17:00 East Africa Time. */
+const WITHDRAW_OPEN_MINUTES = 10 * 60;
+const WITHDRAW_CLOSE_MINUTES = 17 * 60;
+
 function withdrawalWindow(now = new Date()) {
   const shifted = eatShift(now);
   const weekday = shifted.getUTCDay();
+  const minutes = shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
   const weekend = weekday === 0 || weekday === 6;
-  const open = !weekend;
+  const withinHours = minutes >= WITHDRAW_OPEN_MINUTES && minutes < WITHDRAW_CLOSE_MINUTES;
+  const open = !weekend && withinHours;
 
-  let message = '';
-  if (!open) {
-    message = weekday === 6 ? 'Withdrawals reopen on Monday.' : 'Withdrawals reopen tomorrow, Monday.';
+  let message;
+  if (weekend) {
+    message = 'Withdrawals reopen on Monday at 10:00 EAT.';
+  } else if (minutes < WITHDRAW_OPEN_MINUTES) {
+    message = 'Withdrawals open today at 10:00 EAT.';
+  } else if (!withinHours) {
+    message = weekday === 5
+      ? 'Withdrawals reopen on Monday at 10:00 EAT.'
+      : 'Withdrawals reopen tomorrow at 10:00 EAT.';
+  } else {
+    message = 'Withdrawals close today at 17:00 EAT.';
   }
-  return { open, message, weekday, minutes: shifted.getUTCHours() * 60 + shifted.getUTCMinutes() };
+
+  const reason = open
+    ? 'open'
+    : weekend
+      ? 'weekend'
+      : minutes < WITHDRAW_OPEN_MINUTES
+        ? 'before_open'
+        : 'after_close';
+
+  return {
+    open,
+    message,
+    weekday,
+    minutes,
+    reason,
+    opensAt: '10:00',
+    closesAt: '17:00',
+  };
 }
 
 /**
@@ -157,6 +187,8 @@ function startScheduler(db, intervalMs = 30000, logger = console) {
 module.exports = {
   DAY_MS,
   EAT_OFFSET_MS,
+  WITHDRAW_OPEN_MINUTES,
+  WITHDRAW_CLOSE_MINUTES,
   eatShift,
   eatWeekday,
   isBusinessDay,

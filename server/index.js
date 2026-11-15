@@ -133,6 +133,12 @@ function buildConfig(db) {
     rules: {
       minWithdraw: settings.minWithdraw,
       withdrawFeeRate: settings.withdrawFeeRate,
+      inviteBonusPercent: settings.inviteBonusPercent,
+      withdrawOpenHour: 10,
+      withdrawCloseHour: 17,
+      withdrawDays: 'Monday - Friday',
+      withdrawable: 'profit',
+      capitalLocked: true,
     },
     payments: { live: process.env.PAYMENTS_LIVE === 'true' },
     packages: listPackages(db),
@@ -157,7 +163,15 @@ function serializeUser(db, row) {
     activeInvestments: active,
     referralCode: row.referral_code,
     createdAt: row.created_at,
-    withdrawal: { open: window.open, message: window.message },
+    withdrawable: row.balance,
+    capitalLocked: row.capital,
+    withdrawal: {
+      open: window.open,
+      message: window.message,
+      reason: window.reason,
+      opensAt: window.opensAt,
+      closesAt: window.closesAt,
+    },
     withdrawBlocked: Boolean(row.withdraw_blocked),
     withdrawBlockReason: row.withdraw_block_reason || '',
   };
@@ -511,7 +525,10 @@ async function handleApi(db, req, res, url) {
     }
     const window = withdrawalWindow(new Date());
     if (!window.open) {
-      throw new HttpError(400, `Withdrawals are closed on Saturday and Sunday. ${window.message}`);
+      throw new HttpError(
+        400,
+        `Withdrawals are only available Monday - Friday, 10:00 - 17:00 EAT. ${window.message}`,
+      );
     }
     const body = await readJson(req);
     const settings = getSettings(db);
@@ -520,8 +537,10 @@ async function handleApi(db, req, res, url) {
     if (amount < minWithdraw) {
       throw new HttpError(400, `Minimum withdrawal is TZS ${minWithdraw.toLocaleString('en-US')}`);
     }
+    // Only profit is withdrawable: `balance` holds credited profit and bonuses,
+    // while the locked `capital` column is never a withdrawal source.
     if (amount > user.balance) {
-      throw new HttpError(400, 'Withdrawal is more than your profit balance');
+      throw new HttpError(400, 'Withdrawal is more than your profit balance. Capital stays locked.');
     }
 
     const options = settings.withdrawOptions || [];
