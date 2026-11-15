@@ -25,7 +25,7 @@ const {
   rememberPassword,
 } = require('./db');
 
-const ADMIN_TOKEN_PATTERN = /^Bearer\s+adm_([0-9a-f]{64})$/i;
+const ADMIN_TOKEN_PATTERN = /^Bearer\s+(adm_[0-9a-f]{64})$/i;
 
 /* ------------------------------ admin auth ------------------------------ */
 
