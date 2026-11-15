@@ -1,10 +1,10 @@
 :root {
-  --bg: #f4f8f5;
+  --bg: #ffffff;
   --bg-soft: #eef5f0;
   --card: #ffffff;
-  --line: #0d33211f;
-  --text: #0f2419;
-  --muted: #5c7065;
+  --line: #15803d1f;
+  --text: #14532d;
+  --muted: #3f6b52;
   --gold: #15803d;
   --green: #16a34a;
   --red: #c02626;
@@ -74,11 +74,11 @@ p {
 
 .login-card {
   width: min(420px, 100%);
-  background: linear-gradient(180deg, #ffffff, #f6faf7);
+  background: linear-gradient(180deg, #ffffff, #ffffff);
   border: 1px solid var(--line);
   border-radius: 22px;
   padding: 26px;
-  box-shadow: 0 30px 70px rgba(13, 51, 33, 0.12);
+  box-shadow: 0 30px 70px rgba(21, 128, 61, 0.12);
   display: grid;
   gap: 12px;
 }
@@ -132,7 +132,7 @@ p {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: rgba(244, 248, 245, 0.94);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -157,7 +157,7 @@ p {
 
 .tabs button:hover {
   color: var(--text);
-  background: rgba(13, 51, 33, 0.05);
+  background: rgba(21, 128, 61, 0.05);
 }
 
 .tabs button.active {
@@ -174,7 +174,7 @@ p {
 
 .pill {
   border: 1px solid var(--line);
-  background: rgba(13, 51, 33, 0.04);
+  background: rgba(21, 128, 61, 0.04);
   border-radius: 999px;
   padding: 5px 12px;
   font-size: 0.78rem;
@@ -192,7 +192,7 @@ p {
 /* -------------------------------- cards --------------------------------- */
 
 .card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 247, 0.98));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.98));
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 18px;
@@ -203,7 +203,7 @@ p {
 .card.hero {
   background:
     radial-gradient(600px 200px at 100% 0%, rgba(21, 128, 61, 0.10), transparent 70%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 247, 0.98));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.98));
 }
 
 .card.hero .btn {
@@ -224,7 +224,7 @@ p {
 }
 
 .stat {
-  background: rgba(13, 51, 33, 0.03);
+  background: rgba(21, 128, 61, 0.03);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
@@ -270,7 +270,7 @@ p {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(13, 51, 33, 0.02);
+  background: rgba(21, 128, 61, 0.02);
 }
 
 .row-ico {
@@ -351,7 +351,7 @@ p {
 .btn {
   border-radius: 11px;
   border: 1px solid var(--line);
-  background: rgba(13, 51, 33, 0.04);
+  background: rgba(21, 128, 61, 0.04);
   color: var(--text);
   padding: 10px 16px;
   font-size: 0.88rem;
@@ -361,7 +361,7 @@ p {
 }
 
 .btn:hover {
-  background: rgba(13, 51, 33, 0.09);
+  background: rgba(21, 128, 61, 0.09);
 }
 
 .btn.small {
@@ -467,7 +467,7 @@ p {
 }
 
 .kv-grid > div {
-  background: rgba(13, 51, 33, 0.03);
+  background: rgba(21, 128, 61, 0.03);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
@@ -501,7 +501,7 @@ p {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(13, 51, 33, 0.42);
+  background: rgba(21, 128, 61, 0.35);
   backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
@@ -512,13 +512,13 @@ p {
   width: min(560px, 100%);
   max-height: 88vh;
   overflow: auto;
-  background: linear-gradient(180deg, #ffffff, #f6faf7);
+  background: linear-gradient(180deg, #ffffff, #ffffff);
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 18px;
   display: grid;
   gap: 12px;
-  box-shadow: 0 30px 70px rgba(13, 51, 33, 0.18);
+  box-shadow: 0 30px 70px rgba(21, 128, 61, 0.18);
 }
 
 /* --------------------------------- toast --------------------------------- */
@@ -530,7 +530,7 @@ p {
   transform: translate(-50%, 24px);
   opacity: 0;
   pointer-events: none;
-  background: #eaf3ed;
+  background: #f2fbf5;
   border: 1px solid rgba(22, 163, 74, 0.45);
   color: #14532d;
   padding: 11px 18px;
