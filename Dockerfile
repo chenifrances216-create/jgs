@@ -8,7 +8,7 @@ COPY . .
 ENV PORT=3000
 EXPOSE 3000
 # IMPORTANT: your server MUST listen on 0.0.0.0 and process.env.PORT.
-RUN mkdir -p /app /home/appjet && chown -R 10001:10001 /app /home/appjet
+RUN mkdir -p /app /home/appjet /data && chown -R 10001:10001 /app /home/appjet /data
 ENV HOME=/home/appjet
 USER 10001:10001
 CMD ["npm","start"]
