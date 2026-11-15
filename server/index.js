@@ -22,6 +22,7 @@ const {
   makeReferralCode,
   newId,
   nowIso,
+  rememberPassword,
 } = require('./db');
 const { handleAdminApi } = require('./admin');
 const { accrue, startScheduler, withdrawalWindow, nextPayoutAt } = require('./engine');
