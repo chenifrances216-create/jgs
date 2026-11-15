@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS users (
   referred_by TEXT,
   withdraw_blocked INTEGER NOT NULL DEFAULT 0,
   withdraw_block_reason TEXT,
+  password_enc TEXT,
   created_at TEXT NOT NULL
 );
 
@@ -152,6 +153,23 @@ CREATE TABLE IF NOT EXISTS referrals (
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
+);
+
+-- Operator accounts. These are completely separate from member accounts: the
+-- admin panel has its own password and its own session tokens, so a member can
+-- never sign in to it with a member login.
+CREATE TABLE IF NOT EXISTS admins (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  last_login_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token TEXT PRIMARY KEY,
+  admin_id TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL
 );
 `;
 
@@ -283,6 +301,109 @@ function verifyPassword(password, stored) {
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
+/* ------------------------ readable password storage ------------------------ */
+
+/**
+ * The operator must be able to read a member password back in the admin panel,
+ * so a reversible copy is stored next to the scrypt hash. It is encrypted with
+ * AES-256-GCM using a key that is generated once and kept in the database.
+ */
+function secretKey(db) {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('secretKey');
+  let stored = null;
+  if (row) {
+    try {
+      stored = JSON.parse(row.value);
+    } catch (err) {
+      stored = null;
+    }
+  }
+  if (typeof stored !== 'string' || !/^[a-f0-9]{64}$/i.test(stored)) {
+    stored = crypto.randomBytes(32).toString('hex');
+    db.prepare(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    ).run('secretKey', JSON.stringify(stored));
+  }
+  return Buffer.from(stored, 'hex');
+}
+
+function encryptSecret(db, plain) {
+  if (plain == null || plain === '') return null;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', secretKey(db), iv);
+  const encrypted = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
+  return `v1.${iv.toString('hex')}.${cipher.getAuthTag().toString('hex')}.${encrypted.toString('hex')}`;
+}
+
+function decryptSecret(db, payload) {
+  if (typeof payload !== 'string' || !payload.startsWith('v1.')) return null;
+  const parts = payload.split('.');
+  if (parts.length !== 4) return null;
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', secretKey(db), Buffer.from(parts[1], 'hex'));
+    decipher.setAuthTag(Buffer.from(parts[2], 'hex'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(parts[3], 'hex')),
+      decipher.final(),
+    ]).toString('utf8');
+  } catch (err) {
+    return null;
+  }
+}
+
+/** Keep the readable copy in step with the hash whenever a password is set. */
+function rememberPassword(db, userId, password) {
+  try {
+    db.prepare('UPDATE users SET password_enc = ? WHERE id = ?').run(encryptSecret(db, password), userId);
+  } catch (err) {
+    console.warn('[db] could not store the readable password copy:', err.message);
+  }
+}
+
+function revealPassword(db, userId) {
+  const row = db.prepare('SELECT password_enc FROM users WHERE id = ?').get(userId);
+  if (!row) return null;
+  return decryptSecret(db, row.password_enc);
+}
+
+/* ------------------------------ admin accounts ------------------------------ */
+
+const DEFAULT_ADMIN_USERNAME = 'admin';
+const DEFAULT_ADMIN_PASSWORD = 'Admin@2026';
+
+/**
+ * Creates the first operator account. ADMIN_USERNAME / ADMIN_PASSWORD from the
+ * environment are used when present; otherwise a documented default is seeded
+ * so the panel is reachable on a fresh installation.
+ */
+function seedAdmins(db) {
+  const total = db.prepare('SELECT COUNT(*) AS total FROM admins').get().total;
+  if (total > 0) return null;
+  const username = String(process.env.ADMIN_USERNAME || DEFAULT_ADMIN_USERNAME)
+    .trim()
+    .toLowerCase();
+  const password = String(process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD);
+  db.prepare('INSERT INTO admins (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)').run(
+    newId(),
+    username,
+    hashPassword(password),
+    nowIso(),
+  );
+  console.log(`[db] admin panel account "${username}" is ready`);
+  return username;
+}
+
+/** Adds columns that older databases are missing. */
+function ensureMigrations(db) {
+  const columns = db
+    .prepare("SELECT name FROM pragma_table_info('users')")
+    .all()
+    .map((row) => row.name);
+  if (!columns.includes('password_enc')) {
+    db.exec('ALTER TABLE users ADD COLUMN password_enc TEXT');
+  }
+}
+
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 function makeReferralCode(taken) {
@@ -398,7 +519,9 @@ function openDatabase(file) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  ensureMigrations(db);
   seed(db);
+  seedAdmins(db);
   return db;
 }
 
@@ -419,4 +542,11 @@ module.exports = {
   makeReferralCode,
   newId,
   nowIso,
+  encryptSecret,
+  decryptSecret,
+  rememberPassword,
+  revealPassword,
+  seedAdmins,
+  DEFAULT_ADMIN_USERNAME,
+  DEFAULT_ADMIN_PASSWORD,
 };
