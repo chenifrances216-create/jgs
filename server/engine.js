@@ -5,7 +5,8 @@
  *
  * Rules taken from the product's own wording:
  *  - the first profit day starts 24 hours after a ship is rented;
- *  - profit is credited on business days only (Monday - Friday, EAT);
+ *  - after that one profit day is credited every 24 hours, seven days a
+ *    week, so every member is paid inside 24 hours;
  *  - a ship pays `days` profit days in total, then it is finished;
  *  - every credited day is written to the `payouts` ledger, and the
  *    UNIQUE (investment_id, day_index) constraint makes a second credit
@@ -36,18 +37,16 @@ function isBusinessDay(value) {
 
 /**
  * Due timestamps for every profit day of an investment.
- * Slot 0 is `startedAt + 24h`; weekend slots move to the next business day
- * keeping the same time of day, so each ship keeps its own payout hour.
+ * Slot 0 is `startedAt + 24h` and then one profit day every 24 hours,
+ * including Saturday and Sunday, so no member waits more than a day.
  */
 function payoutSchedule(startedAt, days) {
   const total = Number(days);
   if (!Number.isFinite(total) || total <= 0) return [];
   const out = [];
-  let cursor = new Date(startedAt).getTime() + DAY_MS;
+  const first = new Date(startedAt).getTime() + DAY_MS;
   for (let index = 0; index < total; index += 1) {
-    while (!isBusinessDay(cursor)) cursor += DAY_MS;
-    out.push(new Date(cursor).toISOString());
-    cursor += DAY_MS;
+    out.push(new Date(first + index * DAY_MS).toISOString());
   }
   return out;
 }
@@ -59,21 +58,18 @@ function nextPayoutAt(startedAt, days, paidDays) {
   return schedule[paidDays];
 }
 
-/** Withdrawals: Monday - Friday, 10:00 - 17:00 EAT. */
+/** Withdrawals: every day except Saturday and Sunday (EAT). */
 function withdrawalWindow(now = new Date()) {
   const shifted = eatShift(now);
   const weekday = shifted.getUTCDay();
-  const minutes = shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
-  const businessDay = weekday >= 1 && weekday <= 5;
-  const open = businessDay && minutes >= 10 * 60 && minutes < 17 * 60;
+  const weekend = weekday === 0 || weekday === 6;
+  const open = !weekend;
 
   let message = '';
   if (!open) {
-    if (!businessDay) message = 'Reopens Monday at 10:00 EAT.';
-    else if (minutes < 10 * 60) message = 'Opens today at 10:00 EAT.';
-    else message = 'Reopens tomorrow at 10:00 EAT.';
+    message = weekday === 6 ? 'Withdrawals reopen on Monday.' : 'Withdrawals reopen tomorrow, Monday.';
   }
-  return { open, message, weekday, minutes };
+  return { open, message, weekday, minutes: shifted.getUTCHours() * 60 + shifted.getUTCMinutes() };
 }
 
 /**

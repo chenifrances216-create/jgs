@@ -511,7 +511,7 @@ async function handleApi(db, req, res, url) {
     }
     const window = withdrawalWindow(new Date());
     if (!window.open) {
-      throw new HttpError(400, `Withdrawals are open Monday to Friday, 10:00 - 17:00 EAT. ${window.message}`);
+      throw new HttpError(400, `Withdrawals are closed on Saturday and Sunday. ${window.message}`);
     }
     const body = await readJson(req);
     const settings = getSettings(db);
