@@ -372,7 +372,13 @@ ul {
   border-radius: 9px;
   background: var(--gold-dim);
   color: var(--gold);
-  font-size: 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.card > .notice {
+  margin: 14px 0 0;
 }
 
 /* ---------------- lists & rows ---------------- */
@@ -1013,7 +1019,9 @@ ul {
 .nav-ico {
   flex: 0 0 18px;
   text-align: center;
-  font-size: 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   opacity: 0.9;
 }
 
@@ -1122,6 +1130,15 @@ ul {
 }
 
 /* ---------------- dashboard header ---------------- */
+
+.label-up {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+}
 
 .dash-head {
   display: flex;
@@ -1331,7 +1348,8 @@ ul {
 
   .mobile-nav .nav-ico {
     flex: none;
-    font-size: 17px;
+    font-size: 12px;
+    font-weight: 700;
   }
 
   .toast {
