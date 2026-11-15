@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ship Transfer</title>
+  <meta name="description" content="Create your Ship Transfer account with your phone number and password." />
+  <meta name="theme-color" content="#0f7a45" />
+  <link rel="icon" href="/img/ships/level-1.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ============ AUTH ============ -->
+  <section id="auth-screen" class="auth">
+    <div class="auth-card">
+      <div class="brand auth-brand">
+        <span class="brand-mark">⚓</span>
+        <span class="brand-text">Ship<b>Transfer</b></span>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Account access">
+        <button class="tab is-active" data-auth-tab="login" role="tab" aria-selected="true" type="button">Sign in</button>
+        <button class="tab" data-auth-tab="register" role="tab" aria-selected="false" type="button">Create account</button>
+      </div>
+
+      <form id="login-form" class="form" data-auth-pane="login" novalidate>
+        <label class="field">
+          <span>Phone number</span>
+          <input type="tel" name="phone" autocomplete="username" placeholder="0712 345 678" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="password" autocomplete="current-password" placeholder="Your password" required />
+        </label>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+        <p class="form-note">New here? Choose <strong>Create account</strong> above to register in seconds.</p>
+      </form>
+
+      <form id="register-form" class="form is-hidden" data-auth-pane="register" novalidate>
+        <label class="field">
+          <span>Phone number</span>
+          <input type="tel" name="phone" autocomplete="tel" placeholder="0712 345 678" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="password" autocomplete="new-password" placeholder="At least 6 characters" minlength="6" required />
+        </label>
+        <input type="hidden" name="inviteCode" id="register-invite" value="" />
+        <button class="btn btn-primary" type="submit">Create account</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <section id="app-screen" class="app is-hidden">
+    <header class="topbar">
+      <button class="brand brand-btn" data-go="home" type="button" aria-label="Home">
+        <span class="brand-mark">⚓</span>
+        <span class="brand-text">Ship<b>Transfer</b></span>
+      </button>
+      <div class="topbar-stats">
+        <div class="chip chip-profit">
+          <em>Profit balance</em>
+          <strong id="top-profit">TZS 0</strong>
+        </div>
+        <div class="chip chip-capital">
+          <em>Capital (locked)</em>
+          <strong id="top-capital">TZS 0</strong>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" data-go="history" type="button" aria-label="History">≡</button>
+        <button class="icon-btn" data-go="account" type="button" aria-label="Account">☺</button>
+      </div>
+    </header>
+
+    <main id="view" class="view" aria-live="polite"></main>
+
+    <nav class="tabbar" aria-label="Main">
+      <button class="nav-item is-active" data-go="home" type="button"><span class="nav-ico">⌂</span><span>Home</span></button>
+      <button class="nav-item" data-go="deposit" type="button"><span class="nav-ico">↓</span><span>Deposit</span></button>
+      <button class="nav-item" data-go="withdraw" type="button"><span class="nav-ico">↑</span><span>Withdraw</span></button>
+      <button class="nav-item" data-go="package" type="button"><span class="nav-ico">🚢</span><span>Package</span></button>
+      <button class="nav-item" data-go="invest" type="button"><span class="nav-ico">◆</span><span>Invest</span></button>
+      <button class="nav-item" data-go="invite" type="button"><span class="nav-ico">＋</span><span>Invite</span></button>
+    </nav>
+  </section>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
