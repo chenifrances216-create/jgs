@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Ship Transfer</title>
-  <meta name="description" content="Create your Ship Transfer account with your phone number and password." />
-  <meta name="theme-color" content="#0f7a45" />
+  <title>Ship Transfer — Ship Investment Dashboard</title>
+  <meta name="description" content="Ship Transfer member dashboard: deposit capital, rent ships, track daily profit and withdraw." />
+  <meta name="theme-color" content="#07070a" />
   <link rel="icon" href="/img/ships/level-1.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
@@ -16,9 +16,10 @@
   <section id="auth-screen" class="auth">
     <div class="auth-card">
       <div class="brand auth-brand">
-        <span class="brand-mark">⚓</span>
+        <span class="brand-mark" aria-hidden="true">⚓</span>
         <span class="brand-text">Ship<b>Transfer</b></span>
       </div>
+      <p class="auth-tag">Premium ship investment platform</p>
 
       <div class="tabs" role="tablist" aria-label="Account access">
         <button class="tab is-active" data-auth-tab="login" role="tab" aria-selected="true" type="button">Sign in</button>
@@ -49,43 +50,103 @@
         </label>
         <input type="hidden" name="inviteCode" id="register-invite" value="" />
         <button class="btn btn-primary" type="submit">Create account</button>
+        <p class="form-note">By creating an account you agree to the deposit, profit and withdrawal rules shown in your dashboard.</p>
       </form>
     </div>
   </section>
 
   <!-- ============ APP ============ -->
   <section id="app-screen" class="app is-hidden">
-    <header class="topbar">
-      <button class="brand brand-btn" data-go="home" type="button" aria-label="Home">
-        <span class="brand-mark">⚓</span>
-        <span class="brand-text">Ship<b>Transfer</b></span>
-      </button>
-      <div class="topbar-stats">
-        <div class="chip chip-profit">
-          <em>Profit balance</em>
-          <strong id="top-profit">TZS 0</strong>
-        </div>
-        <div class="chip chip-capital">
-          <em>Capital (locked)</em>
-          <strong id="top-capital">TZS 0</strong>
-        </div>
-      </div>
-      <div class="topbar-actions">
-        <button class="icon-btn" data-go="history" type="button" aria-label="History">≡</button>
-        <button class="icon-btn" data-go="account" type="button" aria-label="Account">☺</button>
-      </div>
-    </header>
+    <div class="shell">
+      <aside class="sidebar" aria-label="Sections">
+        <button class="brand brand-btn" data-go="home" type="button" aria-label="Dashboard">
+          <span class="brand-mark" aria-hidden="true">⚓</span>
+          <span class="brand-text">Ship<b>Transfer</b></span>
+        </button>
 
-    <main id="view" class="view" aria-live="polite"></main>
+        <div class="nav-group">
+          <span class="nav-label">Overview</span>
+          <button class="nav-item is-active" data-go="home" type="button"><span class="nav-ico">O</span><span>Dashboard</span></button>
+        </div>
 
-    <nav class="tabbar" aria-label="Main">
-      <button class="nav-item is-active" data-go="home" type="button"><span class="nav-ico">⌂</span><span>Home</span></button>
-      <button class="nav-item" data-go="deposit" type="button"><span class="nav-ico">↓</span><span>Deposit</span></button>
-      <button class="nav-item" data-go="withdraw" type="button"><span class="nav-ico">↑</span><span>Withdraw</span></button>
-      <button class="nav-item" data-go="package" type="button"><span class="nav-ico">🚢</span><span>Package</span></button>
-      <button class="nav-item" data-go="invest" type="button"><span class="nav-ico">◆</span><span>Invest</span></button>
-      <button class="nav-item" data-go="invite" type="button"><span class="nav-ico">＋</span><span>Invite</span></button>
+        <div class="nav-group">
+          <span class="nav-label">Money</span>
+          <button class="nav-item" data-go="deposit" type="button"><span class="nav-ico">D</span><span>Deposit</span></button>
+          <button class="nav-item" data-go="withdraw" type="button"><span class="nav-ico">W</span><span>Withdraw</span></button>
+          <button class="nav-item" data-go="history" type="button"><span class="nav-ico">H</span><span>History</span></button>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-label">Grow</span>
+          <button class="nav-item" data-go="package" type="button"><span class="nav-ico">P</span><span>Packages</span></button>
+          <button class="nav-item" data-go="invest" type="button"><span class="nav-ico">I</span><span>Investment</span></button>
+          <button class="nav-item" data-go="invite" type="button"><span class="nav-ico">F</span><span>Invite friends</span></button>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-label">Account</span>
+          <button class="nav-item" data-go="account" type="button"><span class="nav-ico">A</span><span>My account</span></button>
+          <button class="nav-item" data-action="logout" type="button"><span class="nav-ico">S</span><span>Sign out</span></button>
+        </div>
+
+        <div class="sidebar-foot">
+          Profit is paid every business day.<br />
+          Withdrawals Monday – Friday, 10:00 – 17:00.
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <button class="brand brand-btn topbar-brand" data-go="home" type="button" aria-label="Dashboard">
+            <span class="brand-mark" aria-hidden="true">⚓</span>
+            <span class="brand-text">Ship<b>Transfer</b></span>
+          </button>
+
+          <div class="topbar-stats">
+            <div class="chip chip-profit">
+              <em>Profit balance</em>
+              <strong id="top-profit">TZS 0</strong>
+            </div>
+            <div class="chip chip-capital">
+              <em>Capital</em>
+              <strong id="top-capital">TZS 0</strong>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <button class="icon-btn" data-go="history" type="button" aria-label="History">H</button>
+            <button class="icon-btn" data-go="account" type="button" aria-label="My account">A</button>
+          </div>
+        </header>
+
+        <main id="view" class="view" aria-live="polite"></main>
+      </div>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Main sections">
+      <button class="nav-item is-active" data-go="home" type="button"><span class="nav-ico">O</span><span>Home</span></button>
+      <button class="nav-item" data-go="deposit" type="button"><span class="nav-ico">D</span><span>Deposit</span></button>
+      <button class="nav-item" data-go="withdraw" type="button"><span class="nav-ico">W</span><span>Withdraw</span></button>
+      <button class="nav-item" data-go="package" type="button"><span class="nav-ico">P</span><span>Packages</span></button>
+      <button class="nav-item" data-action="more" type="button"><span class="nav-ico">···</span><span>More</span></button>
     </nav>
+
+    <div class="more-sheet" id="more-sheet">
+      <div class="more-backdrop" data-action="close-more"></div>
+      <div class="more-panel" role="dialog" aria-label="More sections">
+        <div class="more-head">
+          <strong>More</strong>
+          <button data-action="close-more" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="more-grid">
+          <button class="nav-item" data-go="invest" type="button"><span class="nav-ico">I</span><span>Investment</span></button>
+          <button class="nav-item" data-go="history" type="button"><span class="nav-ico">H</span><span>History</span></button>
+          <button class="nav-item" data-go="invite" type="button"><span class="nav-ico">F</span><span>Invite friends</span></button>
+          <button class="nav-item" data-go="account" type="button"><span class="nav-ico">A</span><span>My account</span></button>
+          <button class="nav-item" data-action="logout" type="button"><span class="nav-ico">S</span><span>Sign out</span></button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <script src="/app.js" defer></script>
