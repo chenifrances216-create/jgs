@@ -23,6 +23,7 @@ const {
   newId,
   nowIso,
 } = require('./db');
+const { handleAdminApi } = require('./admin');
 const { accrue, startScheduler, withdrawalWindow, nextPayoutAt } = require('./engine');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -306,12 +307,11 @@ async function handleApi(db, req, res, url) {
       ? db.prepare('SELECT * FROM users WHERE referral_code = ?').get(inviteCode)
       : null;
 
-    const adminExists = db.prepare("SELECT 1 FROM users WHERE role = 'admin'").get();
     const user = {
       id: newId(),
       phone,
       name: `Member ${phone}`,
-      role: adminExists ? 'member' : 'admin',
+      role: 'member',
       referralCode: uniqueReferralCode(db),
       createdAt: nowIso(),
     };
@@ -487,7 +487,7 @@ async function handleApi(db, req, res, url) {
       payment: {
         message: live
           ? 'Approve the payment prompt on your phone.'
-          : 'Deposit created in test mode. Use the simulate button to credit it.',
+          : 'Deposit created in test mode. An admin will confirm it shortly.',
       },
     });
   }
@@ -606,76 +606,21 @@ async function handleApi(db, req, res, url) {
     db.transaction(() => {
       db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(next), user.id);
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+    rememberPassword(db, user.id, next);
     })();
     return sendJson(res, 200, { ok: true });
   }
 
-  if (pathname === '/api/admin/overview' && method === 'GET') {
-    const user = authenticate(db, req);
-    requireAdmin(user);
-    const stats = {
-      users: db.prepare('SELECT COUNT(*) AS total FROM users').get().total,
-      pendingDeposits: db
-        .prepare("SELECT COUNT(*) AS total FROM transactions WHERE type = 'deposit' AND status = 'pending'")
-        .get().total,
-      pendingWithdrawals: db
-        .prepare("SELECT COUNT(*) AS total FROM transactions WHERE type = 'withdraw' AND status = 'pending'")
-        .get().total,
-      totalDeposited: db
-        .prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE type = 'deposit' AND status = 'completed'")
-        .get().total,
-    };
-    const requests = db
-      .prepare(
-        `SELECT t.*, u.name AS user_name, u.phone AS user_phone
-           FROM transactions t JOIN users u ON u.id = t.user_id
-          WHERE t.status = 'pending' AND t.type IN ('deposit', 'withdraw')
-          ORDER BY t.created_at ASC LIMIT 100`,
-      )
-      .all()
-      .map((row) => ({
-        ...serializeTransaction(row),
-        user: { name: row.user_name, phone: row.user_phone },
-      }));
-    const payouts = db
-      .prepare(
-        `SELECT t.*, u.name AS user_name FROM transactions t JOIN users u ON u.id = t.user_id
-          WHERE t.type = 'withdraw' ORDER BY t.created_at DESC LIMIT 10`,
-      )
-      .all()
-      .map((row) => ({ ...serializeTransaction(row), user: { name: row.user_name } }));
-    return sendJson(res, 200, { stats, requests, payouts });
-  }
-
-  const decisionMatch = /^\/api\/admin\/transactions\/([^/]+)\/decision$/.exec(pathname);
-  if (decisionMatch && method === 'POST') {
-    const user = authenticate(db, req);
-    requireAdmin(user);
-    const body = await readJson(req);
-    const action = String(body.action || '');
-    if (action !== 'approve' && action !== 'reject') throw new HttpError(400, 'Unknown decision');
-
-    const txn = db.prepare('SELECT * FROM transactions WHERE id = ?').get(decisionMatch[1]);
-    if (!txn) throw new HttpError(404, 'Request not found');
-    if (txn.status !== 'pending') throw new HttpError(400, 'This request was already handled');
-
-    db.transaction(() => {
-      const updated = db
-        .prepare("UPDATE transactions SET status = ?, decided_at = ? WHERE id = ? AND status = 'pending'")
-        .run(action === 'approve' ? 'completed' : 'rejected', nowIso(), txn.id);
-      if (updated.changes !== 1) throw new HttpError(400, 'This request was already handled');
-
-      if (txn.type === 'deposit' && action === 'approve') {
-        db.prepare('UPDATE users SET capital = capital + ? WHERE id = ?').run(txn.amount, txn.user_id);
-        payInviteBonus(db, txn.user_id, txn.amount);
-      }
-      if (txn.type === 'withdraw' && action === 'reject') {
-        db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(txn.amount, txn.user_id);
-      }
-    })();
-
-    const fresh = db.prepare('SELECT * FROM transactions WHERE id = ?').get(txn.id);
-    return sendJson(res, 200, { transaction: serializeTransaction(fresh) });
+  if (pathname.startsWith('/api/admin/')) {
+    const handled = await handleAdminApi(db, req, res, url, {
+      sendJson,
+      readJson,
+      getSettings,
+      serializeTransaction,
+      serializeUser,
+      payInviteBonus,
+    });
+    if (handled) return;
   }
 
   throw new HttpError(404, 'Not found');
@@ -749,6 +694,9 @@ function createServer(db) {
       if (url.pathname.startsWith('/api/')) {
         return await handleApi(db, req, res, url);
       }
+      if (url.pathname === '/admin' || url.pathname === '/admin/') {
+        return serveStatic(req, res, '/admin.html');
+      }
       return serveStatic(req, res, url.pathname);
     } catch (err) {
       if (err instanceof HttpError) {
@@ -779,31 +727,6 @@ function bootstrap() {
   const dbFile = process.env.DB_FILE || path.join(resolveDataDir(), 'ship.db');
   const db = openDatabase(dbFile);
   console.log(`[server] database ${dbFile} via ${db.driver}`);
-
-  const adminPhone = (process.env.ADMIN_PHONE || '').replace(/[^\d]/g, '');
-  const adminPassword = process.env.ADMIN_PASSWORD || '';
-  if (adminPhone && adminPassword.length >= 6) {
-    const existing = db.prepare('SELECT * FROM users WHERE phone = ?').get(adminPhone);
-    if (existing) {
-      db.prepare("UPDATE users SET role = 'admin', password_hash = ? WHERE id = ?").run(
-        hashPassword(adminPassword),
-        existing.id,
-      );
-    } else {
-      db.prepare(
-        `INSERT INTO users (id, phone, name, password_hash, role, referral_code, created_at)
-         VALUES (?, ?, ?, ?, 'admin', ?, ?)`,
-      ).run(
-        newId(),
-        adminPhone,
-        `Member ${adminPhone}`,
-        hashPassword(adminPassword),
-        uniqueReferralCode(db),
-        nowIso(),
-      );
-    }
-    console.log(`[server] admin account ready for ${adminPhone}`);
-  }
 
   const server = createServer(db);
   const port = Number(process.env.PORT || 3000);
