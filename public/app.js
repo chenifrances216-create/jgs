@@ -221,7 +221,7 @@ function windowNotice(window = {}) {
     <div class="notice ${open ? 'open' : 'closed'}">
       <div>
         <strong>${open ? 'Withdrawals are open now' : 'Withdrawals are closed'}</strong>
-        ${esc(window.message || '')} Withdrawals run every day except Saturday and Sunday.
+        ${esc(window.message || '')} Withdrawals run Monday – Friday, 10:00 – 17:00 EAT.
       </div>
     </div>`;
 }
@@ -235,7 +235,7 @@ function rulesCard() {
         <li>Minimum withdrawal: <b>${tzs(rules.minWithdraw || 3000)}</b></li>
         <li>Service fee: <b>${Math.round((rules.withdrawFeeRate || 0.1) * 100)}%</b> of every withdrawal</li>
         <li>Withdrawal days: <b>Monday – Friday only</b> (Saturday &amp; Sunday closed)</li>
-        <li>Withdrawal hours: <b>any time on open days</b></li>
+        <li>Withdrawal hours: <b>10:00 – 17:00 EAT</b> (Monday – Friday)</li>
         <li>Only <b>profit</b> can be withdrawn — <b>capital stays locked</b></li>
         <li>Daily profit is paid on <b>business days only</b> — no profit on Saturday or Sunday</li>
       </ul>
@@ -395,7 +395,7 @@ function viewWithdraw() {
           <input type="number" name="amount" id="withdraw-amount" min="${cfg.minWithdraw || 3000}" step="100" placeholder="5000" required />
         </label>
         <div class="kv" id="withdraw-summary">
-          <div><span>Service fee (10%)</span><b id="withdraw-fee">TZS 0</b></div>
+          <div><span>Service fee (${Math.round(((cfg.rules && cfg.rules.withdrawFeeRate) || cfg.withdrawFeeRate || 0.1) * 100)}%)</span><b id="withdraw-fee">TZS 0</b></div>
           <div><span>You receive</span><b id="withdraw-net">TZS 0</b></div>
         </div>
         <label class="field">
@@ -775,7 +775,7 @@ async function submitWithdraw(form) {
     const data = await api('/api/withdraw', { method: 'POST', body });
     setUser(data.user);
     form.reset();
-    toast(`Withdrawal requested. You will receive ${tzs(data.payout.net)} after the 10% fee.`);
+    toast(`Withdrawal requested. You will receive ${tzs(data.payout.net)} after the service fee.`);
     await go('history');
   } catch (err) {
     toast(err.message, true);
@@ -924,7 +924,10 @@ document.addEventListener('submit', async (event) => {
 document.addEventListener('input', (event) => {
   if (event.target.id === 'withdraw-amount') {
     const amount = Number(event.target.value || 0);
-    const fee = Math.round(amount * 0.1);
+    const rate = (state.config && state.config.rules && state.config.rules.withdrawFeeRate)
+      || (state.config && state.config.withdrawFeeRate)
+      || 0.1;
+    const fee = Math.round(amount * rate);
     const feeEl = $('#withdraw-fee');
     const netEl = $('#withdraw-net');
     if (feeEl) feeEl.textContent = tzs(fee);

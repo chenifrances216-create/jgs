@@ -68,14 +68,55 @@ test('next payout advances only after a day has been paid', () => {
   assert.equal(nextPayoutAt(THURSDAY, 2, 2), null);
 });
 
-test('withdrawals are closed on Saturday and Sunday only', () => {
-  assert.equal(withdrawalWindow('2026-11-13T09:00:00.000Z').open, true); // Friday 12:00 EAT
-  assert.equal(withdrawalWindow('2026-11-13T05:00:00.000Z').open, true); // Friday 08:00 EAT
-  assert.equal(withdrawalWindow('2026-11-13T18:00:00.000Z').open, true); // Friday 21:00 EAT
+test('withdrawals run Monday to Friday, 10:00 - 17:00 EAT', () => {
+  // Friday 13 Nov 2026
+  assert.equal(withdrawalWindow('2026-11-13T06:59:00.000Z').open, false); // 09:59 EAT
+  assert.match(withdrawalWindow('2026-11-13T06:59:00.000Z').message, /10:00/);
+  assert.equal(withdrawalWindow('2026-11-13T07:00:00.000Z').open, true); // 10:00 EAT
+  assert.equal(withdrawalWindow('2026-11-13T09:00:00.000Z').open, true); // 12:00 EAT
+  assert.equal(withdrawalWindow('2026-11-13T13:59:00.000Z').open, true); // 16:59 EAT
+  assert.equal(withdrawalWindow('2026-11-13T14:00:00.000Z').open, false); // 17:00 EAT
+  assert.equal(withdrawalWindow('2026-11-13T18:00:00.000Z').open, false); // 21:00 EAT
+  assert.match(withdrawalWindow('2026-11-13T18:00:00.000Z').message, /Monday/);
+
+  // Saturday and Sunday stay closed all day.
   assert.equal(withdrawalWindow('2026-11-14T09:00:00.000Z').open, false); // Saturday 12:00 EAT
   assert.equal(withdrawalWindow('2026-11-15T09:00:00.000Z').open, false); // Sunday 12:00 EAT
-  assert.equal(withdrawalWindow('2026-11-15T21:30:00.000Z').open, true); // Monday 00:30 EAT
   assert.match(withdrawalWindow('2026-11-15T09:00:00.000Z').message, /Monday/);
+
+  // Monday opens at 10:00 EAT and not before.
+  assert.equal(withdrawalWindow('2026-11-16T06:00:00.000Z').open, false); // Monday 09:00 EAT
+  assert.equal(withdrawalWindow('2026-11-16T07:00:00.000Z').open, true); // Monday 10:00 EAT
+});
+
+test('published tiers match the operator price list', () => {
+  const db = openDatabase(':memory:');
+  const rows = db.prepare('SELECT capital, daily_profit FROM packages ORDER BY capital').all();
+  assert.deepEqual(
+    rows.map((row) => [row.capital, row.daily_profit]),
+    [
+      [10000, 500],
+      [20000, 1000],
+      [30000, 1500],
+      [60000, 2000],
+      [100000, 3000],
+      [200000, 5000],
+      [300000, 7000],
+      [400000, 8000],
+      [600000, 15000],
+      [700000, 20000],
+      [800000, 25000],
+      [900000, 30000],
+      [1000000, 37000],
+    ],
+  );
+
+  const settings = Object.fromEntries(
+    db.prepare('SELECT key, value FROM settings').all().map((row) => [row.key, JSON.parse(row.value)]),
+  );
+  assert.equal(settings.minWithdraw, 3000);
+  assert.equal(settings.withdrawFeeRate, 0.1);
+  assert.equal(settings.inviteBonusPercent, 10);
 });
 
 test('a profit day is credited exactly once, even when accrual runs repeatedly', () => {

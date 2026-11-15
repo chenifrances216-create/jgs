@@ -45,8 +45,18 @@ test('members get profit automatically, once per day, and the ledger never dupli
   // The published configuration and the original page are served unchanged.
   const config = await call(app.base, '/api/config');
   assert.equal(config.status, 200);
-  assert.equal(config.json.packages.length, 3);
+  assert.equal(config.json.packages.length, 13);
   assert.equal(config.json.minDeposit, 5000);
+  assert.equal(config.json.rules.minWithdraw, 3000);
+  assert.equal(config.json.rules.withdrawFeeRate, 0.1);
+  assert.equal(config.json.rules.inviteBonusPercent, 10);
+  assert.equal(config.json.rules.withdrawOpenHour, 10);
+  assert.equal(config.json.rules.withdrawCloseHour, 17);
+  assert.equal(config.json.rules.capitalLocked, true);
+  const topTier = config.json.packages.find((p) => p.capital === 1000000);
+  assert.equal(topTier.dailyProfit, 37000);
+  const entryTier = config.json.packages.find((p) => p.capital === 10000);
+  assert.equal(entryTier.dailyProfit, 500);
 
   const page = await call(app.base, '/');
   assert.equal(page.status, 200);
@@ -117,11 +127,11 @@ test('members get profit automatically, once per day, and the ledger never dupli
   const invest = await call(app.base, '/api/invest', {
     method: 'POST',
     token: memberToken,
-    body: { packageId: 'level-1' },
+    body: { packageId: 'tier-10000' },
   });
   assert.equal(invest.status, 201);
-  assert.equal(invest.json.user.capital, 50000);
-  assert.equal(invest.json.investment.dailyProfit, 3000);
+  assert.equal(invest.json.user.capital, 90000);
+  assert.equal(invest.json.investment.dailyProfit, 500);
 
   // Backdate the rental so the whole 30-day term is due, then read the balance
   // several times: the profit must arrive once and never repeat.
@@ -130,10 +140,10 @@ test('members get profit automatically, once per day, and the ledger never dupli
     .run('2026-01-05T07:00:00.000Z', invest.json.investment.id);
 
   const firstRead = await call(app.base, '/api/me', { token: memberToken });
-  assert.equal(firstRead.json.user.balance, 90000);
+  assert.equal(firstRead.json.user.balance, 15000);
 
   const secondRead = await call(app.base, '/api/me', { token: memberToken });
-  assert.equal(secondRead.json.user.balance, 90000);
+  assert.equal(secondRead.json.user.balance, 15000);
 
   assert.equal(accrue(app.db).length, 0);
   assert.equal(accrue(app.db).length, 0);
@@ -142,16 +152,24 @@ test('members get profit automatically, once per day, and the ledger never dupli
     .prepare('SELECT COUNT(*) AS total, SUM(amount) AS paid FROM payouts WHERE investment_id = ?')
     .get(invest.json.investment.id);
   assert.equal(ledger.total, 30);
-  assert.equal(ledger.paid, 90000);
+  assert.equal(ledger.paid, 15000);
 
   const investments = await call(app.base, '/api/investments', { token: memberToken });
   assert.equal(investments.json.investments.length, 1);
   assert.equal(investments.json.investments[0].daysPaid, 30);
   assert.equal(investments.json.investments[0].status, 'finished');
-  assert.equal(investments.json.investments[0].earned, 90000);
+  assert.equal(investments.json.investments[0].earned, 15000);
 
   const profitHistory = await call(app.base, '/api/transactions?type=profit', { token: memberToken });
   assert.equal(profitHistory.json.transactions.length, 30);
+
+  // Withdrawals below TZS 3,000 are refused.
+  const belowMin = await call(app.base, '/api/withdraw', {
+    method: 'POST',
+    token: memberToken,
+    body: { amount: 2000, method: 'mpesa', account: '0712000002' },
+  });
+  assert.equal(belowMin.status, 400);
 
   // Withdrawals cannot exceed the profit balance.
   const tooMuch = await call(app.base, '/api/withdraw', {
