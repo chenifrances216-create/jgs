@@ -5,8 +5,8 @@
  *
  * Rules taken from the product's own wording:
  *  - the first profit day starts 24 hours after a ship is rented;
- *  - after that one profit day is credited every 24 hours, seven days a
- *    week, so every member is paid inside 24 hours;
+ *  - profit is credited on business days only (Monday - Friday, EAT), so no
+ *    profit ever lands on Saturday or Sunday;
  *  - a ship pays `days` profit days in total, then it is finished;
  *  - every credited day is written to the `payouts` ledger, and the
  *    UNIQUE (investment_id, day_index) constraint makes a second credit
@@ -37,16 +37,18 @@ function isBusinessDay(value) {
 
 /**
  * Due timestamps for every profit day of an investment.
- * Slot 0 is `startedAt + 24h` and then one profit day every 24 hours,
- * including Saturday and Sunday, so no member waits more than a day.
+ * Slot 0 is `startedAt + 24h`; a weekend slot moves to the next business day
+ * keeping the same time of day, so no profit lands on Saturday or Sunday.
  */
 function payoutSchedule(startedAt, days) {
   const total = Number(days);
   if (!Number.isFinite(total) || total <= 0) return [];
   const out = [];
-  const first = new Date(startedAt).getTime() + DAY_MS;
+  let cursor = new Date(startedAt).getTime() + DAY_MS;
   for (let index = 0; index < total; index += 1) {
-    out.push(new Date(first + index * DAY_MS).toISOString());
+    while (!isBusinessDay(cursor)) cursor += DAY_MS;
+    out.push(new Date(cursor).toISOString());
+    cursor += DAY_MS;
   }
   return out;
 }

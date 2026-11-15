@@ -45,13 +45,13 @@ function seedInvestment(db, overrides = {}) {
   return { user, investment };
 }
 
-test('first profit day lands 24 hours after renting and then every single day', () => {
+test('first profit day lands 24 hours after renting and weekends pay nothing', () => {
   const schedule = payoutSchedule(THURSDAY, 4);
   assert.deepEqual(schedule, [
-    '2026-11-13T07:00:00.000Z', // Friday, exactly 24 hours later
-    '2026-11-14T07:00:00.000Z', // Saturday
-    '2026-11-15T07:00:00.000Z', // Sunday
-    '2026-11-16T07:00:00.000Z', // Monday
+    '2026-11-13T07:00:00.000Z', // Friday, 24 hours later
+    '2026-11-16T07:00:00.000Z', // Monday (Saturday and Sunday skipped)
+    '2026-11-17T07:00:00.000Z', // Tuesday
+    '2026-11-18T07:00:00.000Z', // Wednesday
   ]);
 });
 
@@ -64,7 +64,7 @@ test('weekend days are not business days in East Africa Time', () => {
 
 test('next payout advances only after a day has been paid', () => {
   assert.equal(nextPayoutAt(THURSDAY, 30, 0), '2026-11-13T07:00:00.000Z');
-  assert.equal(nextPayoutAt(THURSDAY, 30, 1), '2026-11-14T07:00:00.000Z');
+  assert.equal(nextPayoutAt(THURSDAY, 30, 1), '2026-11-16T07:00:00.000Z');
   assert.equal(nextPayoutAt(THURSDAY, 2, 2), null);
 });
 
@@ -103,15 +103,15 @@ test('missed days are caught up once, never duplicated', () => {
   const db = openDatabase(':memory:');
   seedInvestment(db);
 
-  // Tuesday 17 Nov 2026 11:00 EAT: 13, 14, 15, 16 and 17 November are due.
+  // Tuesday 17 Nov 2026 11:00 EAT: Friday, Monday and Tuesday are due.
   const caughtUp = accrue(db, '2026-11-17T08:00:00.000Z');
-  assert.equal(caughtUp.length, 5);
-  assert.equal(db.prepare('SELECT balance FROM users WHERE id = ?').get('user-1').balance, 15000);
+  assert.equal(caughtUp.length, 3);
+  assert.equal(db.prepare('SELECT balance FROM users WHERE id = ?').get('user-1').balance, 9000);
 
   assert.equal(accrue(db, '2026-11-17T08:00:00.000Z').length, 0);
   assert.equal(accrue(db, '2026-11-17T20:00:00.000Z').length, 0);
-  assert.equal(db.prepare('SELECT balance FROM users WHERE id = ?').get('user-1').balance, 15000);
-  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM payouts').get().total, 5);
+  assert.equal(db.prepare('SELECT balance FROM users WHERE id = ?').get('user-1').balance, 9000);
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM payouts').get().total, 3);
 });
 
 test('a ship pays its full term then stops', () => {

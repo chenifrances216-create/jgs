@@ -237,7 +237,7 @@ function rulesCard() {
         <li>Withdrawal days: <b>Monday – Friday only</b> (Saturday &amp; Sunday closed)</li>
         <li>Withdrawal hours: <b>any time on open days</b></li>
         <li>Only <b>profit</b> can be withdrawn — <b>capital stays locked</b></li>
-        <li>Daily profit is credited every 24 hours, <b>including Saturday and Sunday</b></li>
+        <li>Daily profit is paid on <b>business days only</b> — no profit on Saturday or Sunday</li>
       </ul>
     </div>`;
 }
@@ -448,7 +448,7 @@ function viewPackage() {
       <p>${packages.length} levels · rent with capital · profit credited 24 hours after renting.</p>
     </section>
     <div class="notice info">
-      <div><strong>How it works</strong> Choose a level, rent the ship with capital, and receive the daily profit every 24 hours for ${packages[0] ? packages[0].days : 30} days, including Saturday and Sunday.</div>
+      <div><strong>How it works</strong> Choose a level, rent the ship with capital, and receive the daily profit every business day (Monday – Friday) for ${packages[0] ? packages[0].days : 30} days. Saturday and Sunday pay nothing.</div>
     </div>
     <div class="grid-3">
       ${packages.map((p) => shipCard(p)).join('')}
