@@ -538,7 +538,7 @@ function viewInvest() {
 
 function viewInvite() {
   const invite = state.invite || { code: state.user.referralCode, invited: [], totalInvited: 0, totalEarned: 0, bonusPercent: 10 };
-  const link = `${location.origin}/join/${encodeURIComponent(invite.code || '')}`;
+  const link = `${location.origin}/invite/ship-transfer/${encodeURIComponent(invite.code || '')}`;
   return `
     <section class="card card-hero">
       <h2>Invite friends</h2>
@@ -887,7 +887,7 @@ document.addEventListener('change', (event) => {
 
 async function boot() {
   const params = new URLSearchParams(location.search);
-  const joinMatch = /^\/join\/([A-Za-z0-9]{4,24})\/?$/.exec(location.pathname);
+  const joinMatch = /^\/(?:join|invite)\/(?:ship-transfer\/)?([A-Za-z0-9]{4,32})\/?$/.exec(location.pathname);
   const ref = (joinMatch && joinMatch[1]) || params.get('ref');
   if (ref) {
     const input = $('#register-invite');

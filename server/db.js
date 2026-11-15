@@ -409,7 +409,7 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function makeReferralCode(taken) {
   for (let attempt = 0; attempt < 50; attempt += 1) {
     let code = '';
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < 16; i += 1) {
       code += CODE_ALPHABET[crypto.randomInt(CODE_ALPHABET.length)];
     }
     if (!taken(code)) return code;
