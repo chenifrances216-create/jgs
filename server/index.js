@@ -481,6 +481,7 @@ async function handleApi(db, req, res, url) {
   const simulateMatch = /^\/api\/deposit\/([^/]+)\/simulate$/.exec(pathname);
   if (simulateMatch && method === 'POST') {
     const user = authenticate(db, req);
+    requireAdmin(user);
     if (process.env.PAYMENTS_LIVE === 'true') {
       throw new HttpError(400, 'Payments are live. Sandbox simulation is disabled.');
     }
@@ -755,7 +756,9 @@ function resolveDataDir() {
 }
 
 function bootstrap() {
-  const db = openDatabase(process.env.DB_FILE || path.join(resolveDataDir(), 'ship.db'));
+  const dbFile = process.env.DB_FILE || path.join(resolveDataDir(), 'ship.db');
+  const db = openDatabase(dbFile);
+  console.log(`[server] database ${dbFile} via ${db.driver}`);
 
   const adminPhone = (process.env.ADMIN_PHONE || '').replace(/[^\d]/g, '');
   const adminPassword = process.env.ADMIN_PASSWORD || '';
