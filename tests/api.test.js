@@ -258,3 +258,124 @@ test('admin approval credits a deposit exactly once', async (t) => {
   const me = await call(app.base, '/api/me', { token: member.json.token });
   assert.equal(me.json.user.capital, 20000);
 });
+
+test('admin panel manages members, balances, passwords, blocks and deposit numbers', async (t) => {
+  const app = await startApp();
+  t.after(() => app.close());
+
+  const badLogin = await call(app.base, '/api/admin/login', {
+    method: 'POST',
+    body: { username: ADMIN_USER, password: 'not-the-password' },
+  });
+  assert.equal(badLogin.status, 401);
+
+  const adminToken = await adminLogin(app.base);
+
+  const member = await call(app.base, '/api/auth/register', {
+    method: 'POST',
+    body: { phone: '0714000001', password: 'secret123' },
+  });
+  assert.equal(member.status, 201);
+  const memberId = member.json.user.id;
+
+  // A member token is not an admin token: the panel has its own login.
+  const asMember = await call(app.base, '/api/admin/users', { token: member.json.token });
+  assert.equal(asMember.status, 401);
+
+  // A new member without a deposit sits in the "registered only" group.
+  const fresh = await call(app.base, '/api/admin/users', { token: adminToken });
+  assert.equal(fresh.status, 200);
+  assert.equal(fresh.json.members.length, 1);
+  assert.equal(fresh.json.members[0].group, 'registered');
+
+  // Credit and debit a member balance from the panel.
+  const credit = await call(app.base, `/api/admin/users/${memberId}/balance`, {
+    method: 'POST',
+    token: adminToken,
+    body: { direction: 'add', amount: 5000, note: 'manual credit' },
+  });
+  assert.equal(credit.status, 200);
+  assert.equal(credit.json.member.balance, 5000);
+
+  const debit = await call(app.base, `/api/admin/users/${memberId}/balance`, {
+    method: 'POST',
+    token: adminToken,
+    body: { direction: 'subtract', amount: 2000, note: 'correction' },
+  });
+  assert.equal(debit.status, 200);
+  assert.equal(debit.json.member.balance, 3000);
+
+  const overDebit = await call(app.base, `/api/admin/users/${memberId}/balance`, {
+    method: 'POST',
+    token: adminToken,
+    body: { direction: 'subtract', amount: 999999 },
+  });
+  assert.equal(overDebit.status, 400);
+
+  // The panel can read the member password.
+  const revealed = await call(app.base, `/api/admin/users/${memberId}/password`, { token: adminToken });
+  assert.equal(revealed.status, 200);
+  assert.equal(revealed.json.password, 'secret123');
+
+  // The panel can block withdrawals.
+  const blocked = await call(app.base, `/api/admin/users/${memberId}/withdraw-block`, {
+    method: 'POST',
+    token: adminToken,
+    body: { blocked: true, reason: 'Under review' },
+  });
+  assert.equal(blocked.status, 200);
+  assert.equal(blocked.json.member.withdrawBlocked, true);
+
+  const blockedWithdraw = await call(app.base, '/api/withdraw', {
+    method: 'POST',
+    token: member.json.token,
+    body: { amount: 3000, method: 'mpesa', account: '0714000001' },
+  });
+  assert.ok(blockedWithdraw.status >= 400, 'a blocked member cannot withdraw');
+
+  // Deposit numbers typed into the panel reach the member app.
+  const saved = await call(app.base, '/api/admin/settings', {
+    method: 'PUT',
+    token: adminToken,
+    body: {
+      depositNumbers: [{ id: 'shop', label: 'Duka la wakala', number: '0754999888', holder: 'Ship Transfer' }],
+      depositMethods: [{ id: 'mpesa', label: 'M-Pesa', account: '0754000111', holder: 'Ship Transfer' }],
+    },
+  });
+  assert.equal(saved.status, 200);
+  const config = await call(app.base, '/api/config');
+  assert.equal(config.json.depositNumbers[0].number, '0754999888');
+  assert.equal(config.json.depositMethods.find((m) => m.id === 'mpesa').account, '0754000111');
+
+  // Approving a deposit moves the member into the active group.
+  const deposit = await call(app.base, '/api/deposit', {
+    method: 'POST',
+    token: member.json.token,
+    body: { amount: 20000, method: 'mpesa', phone: '0714000001' },
+  });
+  assert.equal(deposit.status, 201);
+  const approved = await call(app.base, `/api/admin/requests/${deposit.json.transaction.id}/decision`, {
+    method: 'POST',
+    token: adminToken,
+    body: { action: 'approve' },
+  });
+  assert.equal(approved.status, 200);
+  const active = await call(app.base, '/api/admin/users?filter=active', { token: adminToken });
+  assert.equal(active.json.members.length, 1);
+  assert.equal(active.json.members[0].group, 'active');
+  assert.equal(active.json.members[0].capital, 20000);
+
+  // Deleting a member removes the account and its session.
+  const throwaway = await call(app.base, '/api/auth/register', {
+    method: 'POST',
+    body: { phone: '0714000009', password: 'secret123' },
+  });
+  const removed = await call(app.base, `/api/admin/users/${throwaway.json.user.id}/delete`, {
+    method: 'POST',
+    token: adminToken,
+    body: { confirmPhone: '0714000009' },
+  });
+  assert.equal(removed.status, 200);
+  const gone = await call(app.base, '/api/me', { token: throwaway.json.token });
+  assert.equal(gone.status, 401);
+});
